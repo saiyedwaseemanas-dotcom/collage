@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PWAInstallButton } from './PWAInstallButton';
+import { Menu, Send, SlidersHorizontal, ChevronDown, Check, Bell } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -25,39 +26,39 @@ export const Header: React.FC = () => {
   ];
 
   return (
-    <header className="fixed top-0 w-full z-40 bg-[#ffffff]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe border-b border-[#eaedff]">
-      <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-7xl mx-auto">
+    <header className="fixed top-0 left-0 right-0 w-full z-40 bg-white/95 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe border-b border-[#eaedff]">
+      <div className="h-14 sm:h-16 px-2.5 sm:px-4 flex items-center justify-between gap-1.5 sm:gap-3 max-w-7xl mx-auto">
         {/* Left: Drawer Trigger + Dynamic Institution Brand */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           <button
             aria-label="Open menu"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl text-[#131b2e] hover:bg-[#f2f3ff] transition-colors active:scale-95 shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-[#131b2e] hover:bg-[#f2f3ff] transition-colors active:scale-95 shrink-0"
             type="button"
           >
-            <span className="material-symbols-outlined text-[22px]">menu</span>
+            <Menu className="w-5 h-5 text-[#131b2e]" />
           </button>
 
           <div
-            className="flex items-center gap-2.5 cursor-pointer min-w-0"
+            className="flex items-center gap-2 cursor-pointer min-w-0"
             onClick={() => setActiveTab('branding')}
             title="Click to customize School / College Branding"
           >
             <img
               src={institution.logoUrl}
               alt={institution.shortName}
-              className="w-9 h-9 rounded-xl object-cover border border-[#dae2fd] shadow-xs shrink-0"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover border border-[#dae2fd] shadow-xs shrink-0"
             />
             <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm sm:text-[15px] text-[#131b2e] leading-tight tracking-tight truncate">
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-xs sm:text-sm text-[#131b2e] leading-tight tracking-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px]">
                   {institution.shortName}
                 </span>
-                <span className="text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-1.5 py-0.2 rounded shrink-0">
+                <span className="text-[9px] sm:text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-1 sm:px-1.5 py-0.2 rounded shrink-0">
                   PRO
                 </span>
               </div>
-              <span className="text-[10px] leading-3 text-[#737686] font-medium truncate">
+              <span className="text-[9px] sm:text-[10px] leading-3 text-[#737686] font-medium truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[220px]">
                 {institution.boardName.split(' ')[0]} • {institution.academicSession}
               </span>
             </div>
@@ -65,7 +66,7 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Right: Push Dispatch + APK + Role Switcher + Profile */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Push Button: Quick PDF / Excel / WhatsApp Dispatch */}
           <button
             onClick={() =>
@@ -80,7 +81,7 @@ export const Header: React.FC = () => {
             type="button"
             title="Export PDF / Excel / Google Sheets and send via WhatsApp / Email"
           >
-            <span className="material-symbols-outlined text-[17px]">send</span>
+            <Send className="w-3.5 h-3.5" />
             <span>Push Report</span>
           </button>
 
@@ -91,7 +92,7 @@ export const Header: React.FC = () => {
             type="button"
             title="School Branding Customizer"
           >
-            <span className="material-symbols-outlined text-[16px] text-[#004ac6]">tune</span>
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#004ac6]" />
             <span>Branding</span>
           </button>
 
@@ -102,12 +103,12 @@ export const Header: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-              className="flex items-center gap-1.5 h-8 pl-2.5 pr-1.5 bg-[#eaedff] rounded-full text-[#131b2e] hover:bg-[#e2e7ff] transition-all text-xs font-semibold"
+              className="flex items-center gap-1 sm:gap-1.5 h-8 pl-2 pr-1.5 sm:pl-2.5 sm:pr-2 bg-[#eaedff] rounded-full text-[#131b2e] hover:bg-[#e2e7ff] transition-all text-[11px] sm:text-xs font-semibold active:scale-95"
               type="button"
             >
-              <span className="w-2 h-2 rounded-full bg-[#007d55] animate-pulse"></span>
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#007d55] animate-pulse"></span>
               <span>{userRole}</span>
-              <span className="material-symbols-outlined text-[16px] text-[#737686]">arrow_drop_down</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#737686]" />
             </button>
 
             {showRoleDropdown && (
@@ -128,7 +129,7 @@ export const Header: React.FC = () => {
                     }`}
                   >
                     <span>{role} Mode</span>
-                    {userRole === role && <span className="material-symbols-outlined text-[16px]">check</span>}
+                    {userRole === role && <Check className="w-4 h-4 text-[#004ac6]" />}
                   </button>
                 ))}
               </div>
@@ -140,15 +141,15 @@ export const Header: React.FC = () => {
             <button
               aria-label="Notifications"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative w-9 h-9 flex items-center justify-center rounded-full text-[#434655] hover:bg-[#f2f3ff] transition-colors"
+              className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full text-[#434655] hover:bg-[#f2f3ff] transition-colors active:scale-95"
               type="button"
             >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-[#dae2fd] p-3 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-[#dae2fd] p-3 z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center justify-between pb-2 border-b border-[#f2f3ff]">
                   <span className="font-semibold text-xs text-[#131b2e]">Urgent Notifications</span>
                   <span className="text-[10px] bg-[#ffdad6] text-[#ba1a1a] font-bold px-1.5 py-0.5 rounded-full">
@@ -178,7 +179,7 @@ export const Header: React.FC = () => {
                     showToast('All notifications marked as read');
                     setShowNotifications(false);
                   }}
-                  className="w-full mt-2 text-center text-[11px] font-semibold text-[#004ac6] py-1 rounded hover:bg-[#f2f3ff]"
+                  className="w-full mt-2 text-center text-[11px] font-semibold text-[#004ac6] py-1.5 rounded-lg hover:bg-[#f2f3ff] transition-colors"
                 >
                   Mark All as Read
                 </button>

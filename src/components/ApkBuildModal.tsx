@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useApp } from '../context/AppContext';
+import {
+  Smartphone,
+  X,
+  Download,
+  Terminal,
+  CloudDownload,
+  Shield,
+  CheckCircle2,
+  Info,
+  WifiOff,
+  Maximize2,
+  RefreshCw,
+  Copy,
+  Check,
+  ExternalLink,
+  BadgeCheck,
+} from 'lucide-react';
 
 interface ApkBuildModalProps {
   isOpen: boolean;
@@ -73,123 +90,121 @@ fi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#131b2e]/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl border border-[#eaedff] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden text-left">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#131b2e]/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#eaedff] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden text-left">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#004ac6] to-[#1d2d5a] text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md">
-              <span className="material-symbols-outlined text-[26px] text-[#00d68f]">
-                android
-              </span>
+        <div className="p-3.5 sm:p-5 bg-gradient-to-r from-[#004ac6] to-[#1d2d5a] text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md shrink-0">
+              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-[#00d68f]" />
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold">Android APK & Mobile Deployment</h3>
-              <p className="text-xs text-white/80">Generate native Android APK or install standalone app</p>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-lg font-bold truncate">Android APK & Mobile Deployment</h3>
+              <p className="text-[10px] sm:text-xs text-white/80 truncate">Generate native Android APK or install standalone app</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors active:scale-95 shrink-0 ml-2"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center bg-[#f2f3ff] px-4 pt-2 border-b border-[#dae2fd] overflow-x-auto no-scrollbar gap-2">
+        <div className="flex items-center bg-[#f2f3ff] px-2 sm:px-4 pt-2 border-b border-[#dae2fd] overflow-x-auto no-scrollbar gap-1.5 shrink-0">
           <button
             onClick={() => setActiveTab('quick')}
-            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'quick'
-                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-xs'
                 : 'text-[#434655] border-transparent hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">install_mobile</span>
-            1-Click Mobile Install
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>1-Click Install</span>
           </button>
           <button
             onClick={() => setActiveTab('capacitor')}
-            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'capacitor'
-                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-xs'
                 : 'text-[#434655] border-transparent hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">terminal</span>
-            Capacitor APK Build
+            <Terminal className="w-3.5 h-3.5" />
+            <span>Capacitor APK</span>
           </button>
           <button
             onClick={() => setActiveTab('pwabuilder')}
-            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'pwabuilder'
-                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-xs'
                 : 'text-[#434655] border-transparent hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">cloud_download</span>
-            PWABuilder Cloud APK
+            <CloudDownload className="w-3.5 h-3.5" />
+            <span>Cloud APK</span>
           </button>
           <button
             onClick={() => setActiveTab('bubblewrap')}
-            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'bubblewrap'
-                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] border-[#004ac6] shadow-xs'
                 : 'text-[#434655] border-transparent hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">shield</span>
-            Google TWA / Bubblewrap
+            <Shield className="w-3.5 h-3.5" />
+            <span>Bubblewrap</span>
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-3.5 sm:p-5 overflow-y-auto flex-1 space-y-3 sm:space-y-4">
           {/* TAB 1: 1-Click PWA Install */}
           {activeTab === 'quick' && (
-            <div className="space-y-4">
-              <div className="bg-[#f2f3ff] p-4 rounded-2xl border border-[#dae2fd] space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#004ac6] text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <span className="material-symbols-outlined text-[22px]">phone_android</span>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-[#f2f3ff] p-3.5 sm:p-4 rounded-2xl border border-[#dae2fd] space-y-2.5 sm:space-y-3">
+                <div className="flex items-start gap-2.5 sm:gap-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#004ac6] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Smartphone className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-[#131b2e]">Instant Web App Installation (PWA)</h4>
-                    <p className="text-xs text-[#737686] mt-0.5">
+                    <h4 className="font-bold text-xs sm:text-sm text-[#131b2e]">Instant Web App Installation (PWA)</h4>
+                    <p className="text-[11px] sm:text-xs text-[#737686] mt-0.5">
                       Installs directly on your Android phone or tablet without needing an app store. Features offline support, splash screen, and full-screen native experience.
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <div className="pt-1 flex flex-col sm:flex-row gap-2">
                   {isInstallable && (
                     <button
                       onClick={install}
-                      className="h-11 px-5 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+                      className="h-10 sm:h-11 px-4 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:scale-95 transition-all"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[18px]">download_for_offline</span>
-                      Install App on this Device
+                      <Download className="w-4 h-4" />
+                      <span>Install App on this Device</span>
                     </button>
                   )}
 
                   {isInstalled && (
-                    <div className="px-4 py-2.5 bg-[#bdffdb] text-[#002113] rounded-xl text-xs font-bold flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      App is already installed and running standalone!
+                    <div className="px-3.5 py-2.5 bg-[#bdffdb] text-[#002113] rounded-xl text-xs font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-[#007d55]" />
+                      <span>App is already installed and running standalone!</span>
                     </div>
                   )}
 
                   {!isInstallable && !isInstalled && (
-                    <div className="px-3.5 py-2 bg-white rounded-xl border border-[#dae2fd] text-xs text-[#434655] flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[#004ac6] text-[18px]">info</span>
-                      Open in Chrome on Android: Tap <strong>⋮ (Menu) → Add to Home Screen / Install App</strong>
+                    <div className="px-3 py-2 bg-white rounded-xl border border-[#dae2fd] text-xs text-[#434655] flex items-center gap-2">
+                      <Info className="w-4 h-4 text-[#004ac6] shrink-0" />
+                      <span>Open in Chrome on Android: Tap <strong>⋮ (Menu) → Add to Home Screen</strong></span>
                     </div>
                   )}
                 </div>
@@ -197,10 +212,10 @@ fi
 
               {/* iOS instructions */}
               {isIOS && (
-                <div className="bg-[#fff8e1] p-4 rounded-2xl border border-[#ffe082] space-y-2">
+                <div className="bg-[#fff8e1] p-3.5 sm:p-4 rounded-2xl border border-[#ffe082] space-y-1.5">
                   <div className="flex items-center gap-2 text-[#b78103] font-bold text-xs">
-                    <span className="material-symbols-outlined text-[18px]">apple</span>
-                    Install on Apple iOS (iPhone / iPad)
+                    <Smartphone className="w-4 h-4" />
+                    <span>Install on Apple iOS (iPhone / iPad)</span>
                   </div>
                   <p className="text-xs text-[#5d4037]">
                     Tap the <strong>Share</strong> icon in Safari, scroll down, and select <strong>"Add to Home Screen"</strong>.
@@ -209,19 +224,19 @@ fi
               )}
 
               {/* Android Features Bento */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
-                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-sm">
-                  <span className="material-symbols-outlined text-[#007d55] text-[20px]">wifi_off</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 pt-1">
+                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-xs">
+                  <WifiOff className="w-5 h-5 text-[#007d55] mx-auto" />
                   <p className="text-xs font-bold text-[#131b2e]">Offline Cached</p>
                   <span className="text-[10px] text-[#737686] block">Works without active internet</span>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-sm">
-                  <span className="material-symbols-outlined text-[#004ac6] text-[20px]">fullscreen</span>
+                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-xs">
+                  <Maximize2 className="w-5 h-5 text-[#004ac6] mx-auto" />
                   <p className="text-xs font-bold text-[#131b2e]">Full Screen</p>
                   <span className="text-[10px] text-[#737686] block">Hides browser URL bars</span>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-sm col-span-2 sm:col-span-1">
-                  <span className="material-symbols-outlined text-[#8e44ad] text-[20px]">sync</span>
+                <div className="p-3 bg-white rounded-xl border border-[#eaedff] text-center space-y-1 shadow-xs col-span-2 sm:col-span-1">
+                  <RefreshCw className="w-5 h-5 text-[#8e44ad] mx-auto" />
                   <p className="text-xs font-bold text-[#131b2e]">Auto-Updating</p>
                   <span className="text-[10px] text-[#737686] block">Instant latest builds</span>
                 </div>
@@ -231,35 +246,37 @@ fi
 
           {/* TAB 2: Capacitor Native Android APK */}
           {activeTab === 'capacitor' && (
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#131b2e]">Build Real .APK with Capacitor CLI:</span>
+                <span className="text-xs font-bold text-[#131b2e]">Build Real .APK with Capacitor:</span>
                 <button
                   onClick={handleDownloadBuildScript}
-                  className="px-3 py-1 bg-[#eaedff] hover:bg-[#dae2fd] text-[#004ac6] text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all"
+                  className="px-2.5 py-1 bg-[#eaedff] hover:bg-[#dae2fd] text-[#004ac6] text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all active:scale-95"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[14px]">download</span>
-                  Download build-android-apk.sh
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Script</span>
                 </button>
               </div>
 
               {/* Steps */}
               <div className="space-y-2">
-                <div className="bg-[#131b2e] text-white p-3.5 rounded-xl font-mono text-xs space-y-2 border border-[#2d3748]">
-                  <div className="flex items-center justify-between text-[#a0aec0] text-[11px] pb-1 border-b border-white/10">
+                <div className="bg-[#131b2e] text-white p-3 rounded-xl font-mono text-xs space-y-1.5 border border-[#2d3748]">
+                  <div className="flex items-center justify-between text-[#a0aec0] text-[10px] pb-1 border-b border-white/10">
                     <span>STEP 1: Build & Initialize Android Platform</span>
                     <button
                       onClick={() =>
                         copyToClipboard('npm run build && npx cap add android && npx cap sync', 'Step 1 Command')
                       }
-                      className="hover:text-white transition-colors flex items-center gap-1"
+                      className="hover:text-white transition-colors flex items-center gap-1 active:scale-95"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {copiedIndex === 'Step 1 Command' ? 'check' : 'content_copy'}
-                      </span>
-                      {copiedIndex === 'Step 1 Command' ? 'Copied' : 'Copy'}
+                      {copiedIndex === 'Step 1 Command' ? (
+                        <Check className="w-3.5 h-3.5 text-[#00d68f]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedIndex === 'Step 1 Command' ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
                   <p className="text-[#00d68f]">npm run build</p>
@@ -267,32 +284,34 @@ fi
                   <p className="text-[#00d68f]">npx cap sync</p>
                 </div>
 
-                <div className="bg-[#131b2e] text-white p-3.5 rounded-xl font-mono text-xs space-y-2 border border-[#2d3748]">
-                  <div className="flex items-center justify-between text-[#a0aec0] text-[11px] pb-1 border-b border-white/10">
+                <div className="bg-[#131b2e] text-white p-3 rounded-xl font-mono text-xs space-y-1.5 border border-[#2d3748]">
+                  <div className="flex items-center justify-between text-[#a0aec0] text-[10px] pb-1 border-b border-white/10">
                     <span>STEP 2: Generate APK via Gradle or Android Studio</span>
                     <button
                       onClick={() =>
                         copyToClipboard('cd android && ./gradlew assembleDebug', 'Step 2 Command')
                       }
-                      className="hover:text-white transition-colors flex items-center gap-1"
+                      className="hover:text-white transition-colors flex items-center gap-1 active:scale-95"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {copiedIndex === 'Step 2 Command' ? 'check' : 'content_copy'}
-                      </span>
-                      {copiedIndex === 'Step 2 Command' ? 'Copied' : 'Copy'}
+                      {copiedIndex === 'Step 2 Command' ? (
+                        <Check className="w-3.5 h-3.5 text-[#00d68f]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedIndex === 'Step 2 Command' ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
-                  <p className="text-[#38bdf8]"># Option A: Command Line direct APK build</p>
+                  <p className="text-[#38bdf8]"># Option A: CLI direct APK build</p>
                   <p className="text-[#00d68f]">cd android && ./gradlew assembleDebug</p>
-                  <p className="text-[#38bdf8] pt-1"># Option B: Open in Android Studio GUI</p>
+                  <p className="text-[#38bdf8] pt-0.5"># Option B: Open in Android Studio</p>
                   <p className="text-[#00d68f]">npx cap open android</p>
                 </div>
               </div>
 
-              <div className="bg-[#f2f3ff] p-3 rounded-xl border border-[#dae2fd] text-xs text-[#434655]">
+              <div className="bg-[#f2f3ff] p-2.5 sm:p-3 rounded-xl border border-[#dae2fd] text-xs text-[#434655]">
                 <strong className="text-[#131b2e] block">Output APK Location:</strong>
-                <code className="text-[11px] font-mono text-[#004ac6] bg-white px-1.5 py-0.5 rounded mt-1 inline-block border border-[#dae2fd]">
+                <code className="text-[10px] sm:text-[11px] font-mono text-[#004ac6] bg-white px-1.5 py-0.5 rounded mt-1 inline-block border border-[#dae2fd] break-all">
                   android/app/build/outputs/apk/debug/app-debug.apk
                 </code>
               </div>
@@ -301,18 +320,18 @@ fi
 
           {/* TAB 3: PWABuilder Cloud APK */}
           {activeTab === 'pwabuilder' && (
-            <div className="space-y-3.5">
-              <div className="bg-[#f2f3ff] p-4 rounded-2xl border border-[#dae2fd] space-y-3">
-                <div className="flex items-center gap-2 text-[#004ac6] font-bold text-sm">
-                  <span className="material-symbols-outlined text-[20px]">cloud_sync</span>
-                  Microsoft PWABuilder (Zero Code Cloud APK Package)
+            <div className="space-y-3">
+              <div className="bg-[#f2f3ff] p-3.5 sm:p-4 rounded-2xl border border-[#dae2fd] space-y-2.5 sm:space-y-3">
+                <div className="flex items-center gap-2 text-[#004ac6] font-bold text-xs sm:text-sm">
+                  <CloudDownload className="w-4 h-4" />
+                  <span>Microsoft PWABuilder (Zero Code Cloud APK)</span>
                 </div>
-                <p className="text-xs text-[#737686]">
+                <p className="text-[11px] sm:text-xs text-[#737686]">
                   Microsoft PWABuilder automatically packages your live progressive web app into signed Android packages (APK / AAB) ready to sideload or submit to the Google Play Store.
                 </p>
 
-                <div className="p-3 bg-white rounded-xl border border-[#dae2fd] space-y-1.5">
-                  <span className="text-[11px] font-bold text-[#737686] uppercase">Your App Live URL:</span>
+                <div className="p-2.5 sm:p-3 bg-white rounded-xl border border-[#dae2fd] space-y-1.5">
+                  <span className="text-[10px] font-bold text-[#737686] uppercase">Your App Live URL:</span>
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -322,24 +341,24 @@ fi
                     />
                     <button
                       onClick={() => copyToClipboard(currentUrl, 'Live URL')}
-                      className="px-3 py-1.5 bg-[#004ac6] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1"
+                      className="px-3 py-1.5 bg-[#004ac6] text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1 active:scale-95"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                      Copy
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <a
                     href={`https://www.pwabuilder.com/reportcard?site=${encodeURIComponent(currentUrl)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-11 w-full bg-[#007d55] hover:bg-[#00966b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all"
+                    className="h-10 sm:h-11 w-full bg-[#007d55] hover:bg-[#00966b] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
                   >
-                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                    Generate Android APK on PWABuilder
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Generate Android APK on PWABuilder</span>
                   </a>
                 </div>
               </div>
@@ -348,18 +367,18 @@ fi
 
           {/* TAB 4: Bubblewrap CLI */}
           {activeTab === 'bubblewrap' && (
-            <div className="space-y-3.5">
-              <div className="bg-[#f2f3ff] p-4 rounded-2xl border border-[#dae2fd] space-y-3">
-                <div className="flex items-center gap-2 text-[#004ac6] font-bold text-sm">
-                  <span className="material-symbols-outlined text-[20px]">terminal</span>
-                  Google Official Bubblewrap CLI (Trusted Web Activity)
+            <div className="space-y-3">
+              <div className="bg-[#f2f3ff] p-3.5 sm:p-4 rounded-2xl border border-[#dae2fd] space-y-2.5 sm:space-y-3">
+                <div className="flex items-center gap-2 text-[#004ac6] font-bold text-xs sm:text-sm">
+                  <Terminal className="w-4 h-4" />
+                  <span>Google Official Bubblewrap CLI (Trusted Web Activity)</span>
                 </div>
-                <p className="text-xs text-[#737686]">
+                <p className="text-[11px] sm:text-xs text-[#737686]">
                   Bubblewrap is Google Chrome's command-line tool that turns Progressive Web Apps into Google Play-ready Android APK and AAB packages.
                 </p>
 
-                <div className="bg-[#131b2e] text-white p-3 rounded-xl font-mono text-xs space-y-2 border border-[#2d3748]">
-                  <div className="flex items-center justify-between text-[#a0aec0] text-[11px] pb-1 border-b border-white/10">
+                <div className="bg-[#131b2e] text-white p-3 rounded-xl font-mono text-xs space-y-1.5 border border-[#2d3748]">
+                  <div className="flex items-center justify-between text-[#a0aec0] text-[10px] pb-1 border-b border-white/10">
                     <span>Run in Terminal:</span>
                     <button
                       onClick={() =>
@@ -368,20 +387,22 @@ fi
                           'Bubblewrap Commands'
                         )
                       }
-                      className="hover:text-white transition-colors flex items-center gap-1"
+                      className="hover:text-white transition-colors flex items-center gap-1 active:scale-95"
                       type="button"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {copiedIndex === 'Bubblewrap Commands' ? 'check' : 'content_copy'}
-                      </span>
-                      {copiedIndex === 'Bubblewrap Commands' ? 'Copied' : 'Copy'}
+                      {copiedIndex === 'Bubblewrap Commands' ? (
+                        <Check className="w-3.5 h-3.5 text-[#00d68f]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedIndex === 'Bubblewrap Commands' ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
                   <p className="text-[#a0aec0]"># 1. Install Google Bubblewrap</p>
                   <p className="text-[#00d68f]">npm i -g @bubblewrap/cli</p>
-                  <p className="text-[#a0aec0] pt-1"># 2. Initialize from manifest</p>
+                  <p className="text-[#a0aec0] pt-0.5"># 2. Initialize from manifest</p>
                   <p className="text-[#00d68f]">bubblewrap init --manifest={currentUrl}/manifest.webmanifest</p>
-                  <p className="text-[#a0aec0] pt-1"># 3. Build signed APK</p>
+                  <p className="text-[#a0aec0] pt-0.5"># 3. Build signed APK</p>
                   <p className="text-[#00d68f]">bubblewrap build</p>
                 </div>
               </div>
@@ -390,14 +411,14 @@ fi
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 bg-[#f2f3ff] border-t border-[#dae2fd] flex items-center justify-between">
-          <span className="text-[11px] text-[#737686] flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px] text-[#007d55]">verified</span>
-            PWA Manifest & Maskable Icons Ready
+        <div className="p-3 sm:p-3.5 bg-[#f2f3ff] border-t border-[#dae2fd] flex items-center justify-between shrink-0">
+          <span className="text-[10px] sm:text-[11px] text-[#737686] flex items-center gap-1">
+            <BadgeCheck className="w-3.5 h-3.5 text-[#007d55]" />
+            <span>PWA Manifest & Icons Ready</span>
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-white hover:bg-[#eaedff] text-[#131b2e] text-xs font-bold rounded-xl border border-[#dae2fd] transition-colors"
+            className="px-3.5 py-1.5 bg-white hover:bg-[#eaedff] text-[#131b2e] text-xs font-bold rounded-xl border border-[#dae2fd] transition-colors active:scale-95"
             type="button"
           >
             Close

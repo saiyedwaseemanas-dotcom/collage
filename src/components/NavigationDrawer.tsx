@@ -1,6 +1,24 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { ActiveTab } from '../types';
+import {
+  LayoutDashboard,
+  Users,
+  BadgeAlert,
+  CalendarCheck,
+  BookOpen,
+  Award,
+  RefreshCw,
+  Palette,
+  Settings,
+  X,
+  GraduationCap,
+  ChevronsUpDown,
+  Send,
+  Smartphone,
+  LogOut,
+  UserCheck
+} from 'lucide-react';
 
 export const NavigationDrawer: React.FC = () => {
   const {
@@ -16,16 +34,16 @@ export const NavigationDrawer: React.FC = () => {
     openDispatchModal,
   } = useApp();
 
-  const navItems: { id: ActiveTab; label: string; icon: string; badge?: string }[] = [
-    { id: 'dashboard', label: 'Executive Dashboard', icon: 'dashboard' },
-    { id: 'students', label: 'Students Database', icon: 'group' },
-    { id: 'teachers', label: 'Faculty & Staff Roster', icon: 'badge' },
-    { id: 'attendance', label: 'Daily Attendance Ledger', icon: 'fact_check' },
-    { id: 'syllabus', label: 'Curriculum & Syllabus', icon: 'menu_book' },
-    { id: 'exams', label: 'Marks & Report Cards', icon: 'military_tech' },
-    { id: 'sync', label: 'Google Sheets & Webhook', icon: 'sync_alt' },
-    { id: 'branding', label: 'School & College Customizer', icon: 'branding_watermark', badge: 'Client' },
-    { id: 'settings', label: 'System Settings', icon: 'settings' },
+  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
+    { id: 'dashboard', label: 'Executive Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'students', label: 'Students Database', icon: <Users className="w-5 h-5" /> },
+    { id: 'teachers', label: 'Faculty & Staff Roster', icon: <UserCheck className="w-5 h-5" /> },
+    { id: 'attendance', label: 'Daily Attendance Ledger', icon: <CalendarCheck className="w-5 h-5" /> },
+    { id: 'syllabus', label: 'Curriculum & Syllabus', icon: <BookOpen className="w-5 h-5" /> },
+    { id: 'exams', label: 'Marks & Report Cards', icon: <Award className="w-5 h-5" /> },
+    { id: 'sync', label: 'Google Sheets & Webhook', icon: <RefreshCw className="w-5 h-5" /> },
+    { id: 'branding', label: 'School & College Customizer', icon: <Palette className="w-5 h-5" />, badge: 'Client' },
+    { id: 'settings', label: 'System Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   const handleNav = (tab: ActiveTab) => {
@@ -45,7 +63,7 @@ export const NavigationDrawer: React.FC = () => {
 
       {/* Drawer Body */}
       <aside
-        className={`fixed inset-y-0 left-0 w-[310px] max-w-[85vw] bg-white z-50 shadow-[0_20px_25px_-5px_rgba(15,23,42,0.1)] transition-transform duration-300 ease-in-out flex flex-col pt-safe ${
+        className={`fixed inset-y-0 left-0 w-[300px] max-w-[85vw] bg-white z-50 shadow-2xl transition-transform duration-300 ease-in-out flex flex-col pt-safe ${
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -72,10 +90,10 @@ export const NavigationDrawer: React.FC = () => {
           <button
             aria-label="Close menu"
             onClick={() => setIsDrawerOpen(false)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg text-[#737686] hover:bg-[#f2f3ff] transition-colors shrink-0"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-[#737686] hover:bg-[#f2f3ff] transition-colors shrink-0"
             type="button"
           >
-            <span className="material-symbols-outlined">close</span>
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -87,7 +105,7 @@ export const NavigationDrawer: React.FC = () => {
             </span>
             <div className="flex items-center justify-between text-xs font-semibold text-[#131b2e]">
               <span className="flex items-center gap-1.5 truncate">
-                <span className="material-symbols-outlined text-[18px] text-[#004ac6]">school</span>
+                <GraduationCap className="w-4 h-4 text-[#004ac6] shrink-0" />
                 <span className="truncate">{academicSession}</span>
               </span>
               <button
@@ -96,10 +114,10 @@ export const NavigationDrawer: React.FC = () => {
                   setAcademicSession(nextSession);
                   showToast(`Session switched to ${nextSession}`);
                 }}
-                className="p-1 hover:bg-[#dae2fd] rounded text-[#737686] transition-colors shrink-0"
+                className="p-1 hover:bg-[#dae2fd] rounded-lg text-[#737686] transition-colors shrink-0"
                 title="Toggle Term"
               >
-                <span className="material-symbols-outlined text-[16px]">unfold_more</span>
+                <ChevronsUpDown className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -120,8 +138,8 @@ export const NavigationDrawer: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white text-xs font-bold shadow-md active:scale-95 transition-all"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">send</span>
-            <span>Push Report (PDF / Excel / WA)</span>
+            <Send className="w-4 h-4 shrink-0" />
+            <span>Push Report (PDF/Excel/WA)</span>
           </button>
         </div>
 
@@ -135,13 +153,13 @@ export const NavigationDrawer: React.FC = () => {
                 onClick={() => handleNav(item.id)}
                 className={`w-full flex items-center gap-3 px-3 h-11 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-[#dbe1ff] text-[#004ac6] font-bold shadow-sm'
+                    ? 'bg-[#dbe1ff] text-[#004ac6] font-bold shadow-xs'
                     : 'text-[#434655] hover:bg-[#f2f3ff] hover:text-[#131b2e]'
                 }`}
               >
-                <span className={`material-symbols-outlined text-[20px] ${isActive ? 'text-[#004ac6]' : 'text-[#737686]'}`}>
+                <div className={isActive ? 'text-[#004ac6]' : 'text-[#737686]'}>
                   {item.icon}
-                </span>
+                </div>
                 <span className="truncate">{item.label}</span>
                 {item.badge && (
                   <span className="ml-auto bg-[#007d55]/15 text-[#007d55] text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -166,7 +184,7 @@ export const NavigationDrawer: React.FC = () => {
               type="button"
             >
               <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-[20px] text-[#007d55]">android</span>
+                <Smartphone className="w-5 h-5 text-[#007d55] shrink-0" />
                 <span>Build Android APK</span>
               </div>
               <span className="text-[10px] bg-[#dbe1ff] text-[#004ac6] px-2 py-0.5 rounded-full font-mono font-bold">
@@ -178,7 +196,7 @@ export const NavigationDrawer: React.FC = () => {
 
         {/* User Footer Profile */}
         <div className="p-3 border-t border-[#eaedff] pb-safe bg-[#faf8ff]">
-          <div className="flex items-center gap-2 p-2 rounded-2xl bg-white shadow-sm border border-[#eaedff]">
+          <div className="flex items-center gap-2 p-2 rounded-2xl bg-white shadow-xs border border-[#eaedff]">
             <img
               alt={institution.principalName}
               className="w-9 h-9 rounded-full object-cover ring-1 ring-[#004ac6]/20"
@@ -194,7 +212,7 @@ export const NavigationDrawer: React.FC = () => {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-[#737686] hover:bg-[#f2f3ff] hover:text-[#ba1a1a] transition-colors"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Student } from '../types';
+import {
+  Award,
+  Send,
+  CheckCircle2,
+  SlidersHorizontal,
+  ChevronDown,
+  Info,
+  Table,
+  TrendingUp,
+  UserCheck,
+  Sparkles,
+  Save,
+  Check,
+  FileText,
+  Trophy,
+  PenTool,
+  CheckSquare,
+  Mail,
+  ArrowUp,
+} from 'lucide-react';
 
 export const MarksView: React.FC = () => {
   const {
@@ -84,14 +103,14 @@ export const MarksView: React.FC = () => {
   const reportRank = reportTargetStudent ? (rankMap.get(reportTargetStudent.id) || 1) : 1;
 
   return (
-    <div className="flex flex-col w-full px-4 py-3 space-y-4 max-w-7xl mx-auto text-left pb-24">
+    <div className="flex flex-col w-full px-2.5 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 max-w-7xl mx-auto text-left pb-24">
       {/* Breadcrumb & Term Context Strip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#004ac6] text-[24px]">military_tech</span>
+          <Award className="w-5 h-5 sm:w-6 sm:h-6 text-[#004ac6] shrink-0" />
           <div>
-            <h2 className="text-base sm:text-xl font-bold text-[#131b2e]">Examinations & Grading Ledger</h2>
-            <p className="text-xs text-[#737686]">{institution.name} • {institution.boardName}</p>
+            <h2 className="text-sm sm:text-lg md:text-xl font-bold text-[#131b2e]">Examinations & Grading Ledger</h2>
+            <p className="text-[10px] sm:text-xs text-[#737686]">{institution.name} • {institution.boardName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -105,17 +124,17 @@ export const MarksView: React.FC = () => {
                 targetClass: selectedClass,
               })
             }
-            className="h-9 px-3.5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+            className="w-full sm:w-auto h-9 px-3.5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
             type="button"
           >
-            <span className="material-symbols-outlined text-[16px]">send</span>
+            <Send className="w-3.5 h-3.5 shrink-0" />
             <span>Push Master Ledger (PDF/WA)</span>
           </button>
         </div>
       </div>
 
       {/* Exam Selection Horizontal Scroll Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
         {(['UT-1', 'UT-2', 'Mid-Term', 'Final'] as const).map(exam => {
           const isSelected = selectedExam === exam;
           return (
@@ -125,14 +144,14 @@ export const MarksView: React.FC = () => {
                 setSelectedExam(exam);
                 showToast(`Switched active view to ${exam} examination`);
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 shrink-0 ${
                 isSelected
-                  ? 'bg-[#2563eb] text-white shadow-md'
+                  ? 'bg-[#2563eb] text-white shadow-xs'
                   : 'bg-white text-[#434655] border border-[#dae2fd] hover:bg-[#eaedff]'
               }`}
               type="button"
             >
-              {isSelected && <span className="material-symbols-outlined text-[16px]">check_circle</span>}
+              {isSelected && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
               <span>{exam === 'UT-1' ? 'Unit Test 1' : exam === 'UT-2' ? 'Unit Test 2' : exam === 'Mid-Term' ? 'Mid-Term Exam' : 'Final Exam'}</span>
             </button>
           );
@@ -140,11 +159,11 @@ export const MarksView: React.FC = () => {
       </div>
 
       {/* Filter & Configuration Strip */}
-      <div className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] space-y-3">
-        <div className="grid grid-cols-2 gap-2.5">
+      <div className="bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-2.5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
           {/* Class Selector */}
-          <div className="flex flex-col bg-[#f2f3ff] p-2.5 rounded-2xl border border-[#dae2fd]/50">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#737686]">Class & Section</span>
+          <div className="flex flex-col bg-[#f2f3ff] p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-[#dae2fd]/50">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#737686]">Class & Section</span>
             <div className="flex items-center justify-between mt-0.5">
               <select
                 value={selectedClass}
@@ -157,13 +176,13 @@ export const MarksView: React.FC = () => {
                 <option value="Class 11-Sci">Class 11-Sci</option>
                 <option value="Class 12-Sci">Class 12-Sci</option>
               </select>
-              <span className="material-symbols-outlined text-[18px] text-[#737686]">tune</span>
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#737686] shrink-0" />
             </div>
           </div>
 
           {/* Subject Filter */}
-          <div className="flex flex-col bg-[#f2f3ff] p-2.5 rounded-2xl border border-[#dae2fd]/50">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#737686]">Subject Scope</span>
+          <div className="flex flex-col bg-[#f2f3ff] p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border border-[#dae2fd]/50">
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#737686]">Subject Scope</span>
             <div className="flex items-center justify-between mt-0.5">
               <select
                 value={selectedSubjectScope}
@@ -175,64 +194,64 @@ export const MarksView: React.FC = () => {
                 <option value="Sci">Science</option>
                 <option value="Eng">English</option>
               </select>
-              <span className="material-symbols-outlined text-[18px] text-[#737686]">expand_more</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#737686] shrink-0" />
             </div>
           </div>
         </div>
 
         {/* Max Marks & Grading Scheme Tagline */}
-        <div className="flex items-center justify-between px-1 pt-1">
+        <div className="flex items-center justify-between px-1 pt-0.5">
           <div className="flex items-center gap-1.5 text-[#737686]">
-            <span className="material-symbols-outlined text-[16px] text-[#004ac6]">info</span>
-            <span className="text-xs">
-              Max: <strong className="text-[#131b2e]">50 / Subject</strong> (Grand Total: 150)
+            <Info className="w-3.5 h-3.5 text-[#004ac6] shrink-0" />
+            <span className="text-[10px] sm:text-xs truncate">
+              Max: <strong className="text-[#131b2e]">50/Sub</strong> (Total: 150)
             </span>
           </div>
-          <span className="px-2.5 py-0.5 bg-[#dbe1ff] text-[#00174b] rounded-full text-[10px] font-bold">
+          <span className="px-2 py-0.5 bg-[#dbe1ff] text-[#00174b] rounded-full text-[9px] sm:text-[10px] font-bold shrink-0">
             Scale: A+ (≥90%)
           </span>
         </div>
       </div>
 
       {/* Segmented View Mode Controller */}
-      <div className="bg-[#eaedff] p-1 rounded-2xl flex items-center shadow-inner">
+      <div className="bg-[#eaedff] p-1 rounded-xl sm:rounded-2xl flex items-center shadow-inner">
         <button
           onClick={() => setActiveSubView('marksheet')}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all active:scale-95 ${
             activeSubView === 'marksheet'
-              ? 'bg-white text-[#004ac6] shadow-sm'
+              ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
           }`}
           type="button"
         >
-          <span className="material-symbols-outlined text-[18px]">table_chart</span>
-          <span>Marksheet & Entry</span>
+          <Table className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span className="truncate">Marksheet</span>
         </button>
 
         <button
           onClick={() => setActiveSubView('analytics')}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all active:scale-95 ${
             activeSubView === 'analytics'
-              ? 'bg-white text-[#004ac6] shadow-sm'
+              ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
           }`}
           type="button"
         >
-          <span className="material-symbols-outlined text-[18px]">insights</span>
-          <span>Analytics & Trends</span>
+          <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span className="truncate">Analytics</span>
         </button>
 
         <button
           onClick={() => setActiveSubView('report')}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all active:scale-95 ${
             activeSubView === 'report'
-              ? 'bg-white text-[#004ac6] shadow-sm'
+              ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
           }`}
           type="button"
         >
-          <span className="material-symbols-outlined text-[18px]">badge</span>
-          <span>Report Card</span>
+          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span className="truncate">Report Card</span>
         </button>
       </div>
 
@@ -240,42 +259,42 @@ export const MarksView: React.FC = () => {
       {activeSubView === 'marksheet' && (
         <section className="space-y-3 flex flex-col">
           {/* Quick Actions Banner */}
-          <div className="flex items-center justify-between bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff]">
-            <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-[#dbe1ff] flex items-center justify-center text-[#004ac6] font-bold">
-                <span className="material-symbols-outlined text-[18px]">auto_fix_high</span>
+          <div className="flex items-center justify-between bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-8 h-8 rounded-xl bg-[#dbe1ff] flex items-center justify-center text-[#004ac6] shrink-0 font-bold">
+                <Sparkles className="w-4 h-4" />
               </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[#131b2e]">Live Auto-Calculation Engine</span>
-                <span className="text-[11px] text-[#737686]">Updates total, % and rank in real time</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-[#131b2e] truncate">Auto-Calculation Engine</span>
+                <span className="text-[10px] sm:text-[11px] text-[#737686] truncate">Updates total, % & rank dynamically</span>
               </div>
             </div>
             <button
               onClick={saveAllMarks}
-              className="px-4 py-2 bg-[#004ac6] hover:bg-[#2563eb] rounded-xl text-white text-xs font-bold shadow-sm active:scale-95 transition-transform flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-2 bg-[#004ac6] hover:bg-[#2563eb] rounded-xl text-white text-xs font-bold shadow-xs active:scale-95 transition-transform flex items-center gap-1.5 shrink-0"
               type="button"
             >
-              <span className="material-symbols-outlined text-[16px]">save</span>
-              <span>Save All Marks</span>
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Marks</span>
             </button>
           </div>
 
           {/* Interactive Table Container */}
-          <div className="bg-white rounded-3xl shadow-sm border border-[#eaedff] overflow-hidden">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] overflow-hidden">
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#f2f3ff] text-[#737686] text-[11px] font-bold uppercase tracking-wider border-b border-[#dae2fd]">
-                    <th className="py-3 px-3">Roll</th>
-                    <th className="py-3 px-3 min-w-[140px]">Student</th>
-                    <th className="py-3 px-2 text-center">Math (50)</th>
-                    <th className="py-3 px-2 text-center">Sci (50)</th>
-                    <th className="py-3 px-2 text-center">Eng (50)</th>
-                    <th className="py-3 px-2 text-center">Total</th>
-                    <th className="py-3 px-2 text-center">%</th>
-                    <th className="py-3 px-2 text-center">Grade</th>
-                    <th className="py-3 px-3 text-center">Rank</th>
-                    <th className="py-3 px-2 text-center">Push</th>
+                  <tr className="bg-[#f2f3ff] text-[#737686] text-[10px] sm:text-[11px] font-bold uppercase tracking-wider border-b border-[#dae2fd]">
+                    <th className="py-2.5 sm:py-3 px-2.5 sm:px-3">Roll</th>
+                    <th className="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[120px] sm:min-w-[140px]">Student</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">Math</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">Sci</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">Eng</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">Total</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">%</th>
+                    <th className="py-2.5 sm:py-3 px-1 text-center">Grade</th>
+                    <th className="py-2.5 sm:py-3 px-2 text-center">Rank</th>
+                    <th className="py-2.5 sm:py-3 px-1.5 text-center">Push</th>
                   </tr>
                 </thead>
                 <tbody className="text-xs divide-y divide-[#f2f3ff]">
@@ -285,8 +304,8 @@ export const MarksView: React.FC = () => {
 
                     return (
                       <tr key={student.id} className="hover:bg-[#f2f3ff]/60 transition-colors">
-                        <td className="py-3 px-3 font-mono font-bold text-[#004ac6]">{student.rollNo}</td>
-                        <td className="py-3 px-3 min-w-[140px]">
+                        <td className="py-2.5 sm:py-3 px-2.5 sm:px-3 font-mono font-bold text-[#004ac6]">{student.rollNo}</td>
+                        <td className="py-2.5 sm:py-3 px-2 sm:px-3 min-w-[120px] sm:min-w-[140px]">
                           <div
                             className="flex items-center gap-2 cursor-pointer"
                             onClick={() => {
@@ -295,78 +314,78 @@ export const MarksView: React.FC = () => {
                             }}
                           >
                             <img
-                              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[#004ac6]/20"
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 ring-1 ring-[#004ac6]/20"
                               src={student.avatarUrl}
                               alt={student.name}
                             />
                             <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-[#131b2e] leading-snug truncate hover:text-[#004ac6]">
+                              <span className="font-bold text-xs text-[#131b2e] leading-snug truncate hover:text-[#004ac6]">
                                 {student.name}
                               </span>
                               {isRank1 ? (
-                                <span className="text-[10px] text-[#007d55] font-bold flex items-center gap-0.5">
-                                  <span className="material-symbols-outlined text-[13px]">military_tech</span> Rank #1
+                                <span className="text-[9px] sm:text-[10px] text-[#007d55] font-bold flex items-center gap-0.5">
+                                  <Trophy className="w-2.5 h-2.5" /> Rank #1
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-[#737686]">{student.classSec}</span>
+                                <span className="text-[9px] sm:text-[10px] text-[#737686]">{student.classSec}</span>
                               )}
                             </div>
                           </div>
                         </td>
 
                         {/* Math Input */}
-                        <td className="py-2 px-1 text-center">
+                        <td className="py-1.5 sm:py-2 px-1 text-center">
                           <input
                             type="number"
                             min={0}
                             max={50}
                             value={student.marks.ut2.math}
                             onChange={e => updateStudentMark(student.id, 'math', parseInt(e.target.value) || 0)}
-                            className="w-12 h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
+                            className="w-11 sm:w-12 h-8 sm:h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-xs text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
                           />
                         </td>
 
                         {/* Sci Input */}
-                        <td className="py-2 px-1 text-center">
+                        <td className="py-1.5 sm:py-2 px-1 text-center">
                           <input
                             type="number"
                             min={0}
                             max={50}
                             value={student.marks.ut2.sci}
                             onChange={e => updateStudentMark(student.id, 'sci', parseInt(e.target.value) || 0)}
-                            className="w-12 h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
+                            className="w-11 sm:w-12 h-8 sm:h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-xs text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
                           />
                         </td>
 
                         {/* Eng Input */}
-                        <td className="py-2 px-1 text-center">
+                        <td className="py-1.5 sm:py-2 px-1 text-center">
                           <input
                             type="number"
                             min={0}
                             max={50}
                             value={student.marks.ut2.eng}
                             onChange={e => updateStudentMark(student.id, 'eng', parseInt(e.target.value) || 0)}
-                            className="w-12 h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
+                            className="w-11 sm:w-12 h-8 sm:h-9 text-center bg-[#f2f3ff] rounded-xl font-mono font-bold text-xs text-[#131b2e] focus:bg-white focus:ring-2 focus:ring-[#004ac6] outline-none border border-[#dae2fd]"
                           />
                         </td>
 
                         {/* Total */}
-                        <td className="py-2 px-2 text-center font-mono font-bold text-[#131b2e]">{total}</td>
+                        <td className="py-1.5 sm:py-2 px-1 text-center font-mono font-bold text-xs text-[#131b2e]">{total}</td>
 
                         {/* Pct */}
-                        <td className="py-2 px-2 text-center font-mono font-bold text-[#004ac6]">{pct}%</td>
+                        <td className="py-1.5 sm:py-2 px-1 text-center font-mono font-bold text-xs text-[#004ac6]">{pct}%</td>
 
                         {/* Grade */}
-                        <td className="py-2 px-2 text-center">
-                          <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${gradeBadgeClass}`}>
+                        <td className="py-1.5 sm:py-2 px-1 text-center">
+                          <span className={`px-1.5 sm:px-2 py-0.5 rounded-full font-bold text-[10px] sm:text-[11px] ${gradeBadgeClass}`}>
                             {grade}
                           </span>
                         </td>
 
                         {/* Rank */}
-                        <td className="py-2 px-3 text-center">
+                        <td className="py-1.5 sm:py-2 px-1.5 text-center">
                           <div
-                            className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shadow-xs ${
+                            className={`inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[11px] font-bold shadow-xs ${
                               isRank1 ? 'bg-[#e1e0ff] text-[#4648d4] ring-2 ring-[#4648d4]' : 'bg-[#f2f3ff] text-[#131b2e]'
                             }`}
                           >
@@ -375,7 +394,7 @@ export const MarksView: React.FC = () => {
                         </td>
 
                         {/* Push Action */}
-                        <td className="py-2 px-2 text-center">
+                        <td className="py-1.5 sm:py-2 px-1 text-center">
                           <button
                             onClick={() =>
                               openDispatchModal({
@@ -386,10 +405,10 @@ export const MarksView: React.FC = () => {
                                 targetStudent: student,
                               })
                             }
-                            className="w-8 h-8 rounded-xl bg-[#007d55] hover:bg-[#006644] text-white inline-flex items-center justify-center shadow-xs active:scale-95 transition-all"
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#007d55] hover:bg-[#006644] text-white inline-flex items-center justify-center shadow-xs active:scale-95 transition-all"
                             title="Push Report Card to Parents (WhatsApp/PDF)"
                           >
-                            <span className="material-symbols-outlined text-[16px]">send</span>
+                            <Send className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
@@ -400,12 +419,12 @@ export const MarksView: React.FC = () => {
             </div>
 
             {/* Quick Guidance Footer */}
-            <div className="bg-[#f2f3ff] px-4 py-2.5 flex items-center justify-between text-[#737686] text-[11px] border-t border-[#dae2fd]">
+            <div className="bg-[#f2f3ff] px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between text-[#737686] text-[10px] sm:text-[11px] border-t border-[#dae2fd]">
               <span className="flex items-center gap-1 font-medium">
-                <span className="material-symbols-outlined text-[15px] text-[#007d55]">verified</span>
+                <Check className="w-3.5 h-3.5 text-[#007d55]" />
                 Formula active: Marks ÷ 150 × 100
               </span>
-              <span className="font-mono">{studentStats.length} Records in Ledger</span>
+              <span className="font-mono">{studentStats.length} Records</span>
             </div>
           </div>
         </section>
@@ -413,26 +432,26 @@ export const MarksView: React.FC = () => {
 
       {/* VIEW 2: Analytics */}
       {activeSubView === 'analytics' && (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           {/* Topper Spotlight Banner */}
-          <div className="bg-gradient-to-r from-[#004ac6] to-[#4648d4] p-5 rounded-3xl text-white shadow-md relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#004ac6] to-[#4648d4] p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-white shadow-xs relative overflow-hidden">
             <div className="relative z-10 flex items-center justify-between">
-              <div className="space-y-1.5">
-                <span className="px-2.5 py-0.5 bg-[#6ffbbe] text-[#002113] rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+              <div className="space-y-1 sm:space-y-1.5">
+                <span className="px-2.5 py-0.5 bg-[#6ffbbe] text-[#002113] rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider">
                   Class Valedictorian
                 </span>
-                <h2 className="text-xl sm:text-2xl font-bold">{topper?.student.name}</h2>
-                <p className="text-xs text-white/80 font-medium">
+                <h2 className="text-lg sm:text-2xl font-bold">{topper?.student.name}</h2>
+                <p className="text-[11px] sm:text-xs text-white/80 font-medium">
                   Rank #1 • {topper?.pct}% Overall ({topper?.total} / 150)
                 </p>
               </div>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <img
-                  className="w-16 h-16 rounded-full object-cover shadow-lg ring-4 ring-[#6ffbbe]"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover shadow-lg ring-3 ring-[#6ffbbe]"
                   src={topper?.student.avatarUrl}
                   alt={topper?.student.name}
                 />
-                <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#6063ee] text-white flex items-center justify-center text-[10px] font-bold shadow">
+                <span className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#6063ee] text-white flex items-center justify-center text-[9px] sm:text-[10px] font-bold shadow">
                   #1
                 </span>
               </div>
@@ -440,39 +459,39 @@ export const MarksView: React.FC = () => {
           </div>
 
           {/* Core Metrics Bento */}
-          <div className="grid grid-cols-3 gap-2.5">
-            <div className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] flex flex-col items-center text-center">
-              <span className="material-symbols-outlined text-[#004ac6] text-[22px] mb-1">stacked_line_chart</span>
-              <span className="text-[10px] font-bold uppercase text-[#737686]">Average</span>
-              <span className="text-lg font-bold text-[#131b2e] mt-0.5 font-mono">{avgPct.toFixed(1)}%</span>
-              <span className="text-[11px] text-[#007d55] font-semibold flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[12px]">arrow_upward</span> +3.4%
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+            <div className="bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] flex flex-col items-center text-center">
+              <TrendingUp className="w-5 h-5 text-[#004ac6] mb-1" />
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[#737686]">Average</span>
+              <span className="text-base sm:text-lg font-bold text-[#131b2e] mt-0.5 font-mono">{avgPct.toFixed(1)}%</span>
+              <span className="text-[10px] sm:text-[11px] text-[#007d55] font-semibold flex items-center gap-0.5">
+                <ArrowUp className="w-3 h-3" /> +3.4%
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] flex flex-col items-center text-center">
-              <span className="material-symbols-outlined text-[#4648d4] text-[22px] mb-1">emoji_events</span>
-              <span className="text-[10px] font-bold uppercase text-[#737686]">Highest</span>
-              <span className="text-lg font-bold text-[#131b2e] mt-0.5 font-mono">{topper?.pct}%</span>
-              <span className="text-[10px] text-[#737686] truncate max-w-[80px]">{topper?.student.name}</span>
+            <div className="bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] flex flex-col items-center text-center">
+              <Trophy className="w-5 h-5 text-[#4648d4] mb-1" />
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[#737686]">Highest</span>
+              <span className="text-base sm:text-lg font-bold text-[#131b2e] mt-0.5 font-mono">{topper?.pct}%</span>
+              <span className="text-[9px] sm:text-[10px] text-[#737686] truncate max-w-[80px]">{topper?.student.name}</span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] flex flex-col items-center text-center">
-              <span className="material-symbols-outlined text-[#007d55] text-[22px] mb-1">check_circle</span>
-              <span className="text-[10px] font-bold uppercase text-[#737686]">Passing</span>
-              <span className="text-lg font-bold text-[#131b2e] mt-0.5 font-mono">100%</span>
-              <span className="text-[10px] text-[#007d55] font-bold">All Cleared</span>
+            <div className="bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] flex flex-col items-center text-center">
+              <CheckCircle2 className="w-5 h-5 text-[#007d55] mb-1" />
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase text-[#737686]">Passing</span>
+              <span className="text-base sm:text-lg font-bold text-[#131b2e] mt-0.5 font-mono">100%</span>
+              <span className="text-[9px] sm:text-[10px] text-[#007d55] font-bold">All Cleared</span>
             </div>
           </div>
 
           {/* Subject Performance Breakdown */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-3">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-2.5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#131b2e]">Subject Averages</h3>
-              <span className="text-xs text-[#737686]">Out of 50 Marks</span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#131b2e]">Subject Averages</h3>
+              <span className="text-[10px] sm:text-xs text-[#737686]">Out of 50 Marks</span>
             </div>
 
-            <div className="space-y-3 pt-1">
+            <div className="space-y-2.5 pt-1">
               <div className="space-y-1">
                 <div className="flex justify-between text-xs font-semibold text-[#131b2e]">
                   <span className="flex items-center gap-1.5">
@@ -482,7 +501,7 @@ export const MarksView: React.FC = () => {
                     {mathAvg.toFixed(1)} / 50 ({((mathAvg / 50) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-[#eaedff] h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-[#eaedff] h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div
                     className="bg-[#004ac6] h-full rounded-full transition-all duration-500"
                     style={{ width: `${(mathAvg / 50) * 100}%` }}
@@ -499,7 +518,7 @@ export const MarksView: React.FC = () => {
                     {sciAvg.toFixed(1)} / 50 ({((sciAvg / 50) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-[#eaedff] h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-[#eaedff] h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div
                     className="bg-[#007d55] h-full rounded-full transition-all duration-500"
                     style={{ width: `${(sciAvg / 50) * 100}%` }}
@@ -516,7 +535,7 @@ export const MarksView: React.FC = () => {
                     {engAvg.toFixed(1)} / 50 ({((engAvg / 50) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-[#eaedff] h-2.5 rounded-full overflow-hidden">
+                <div className="w-full bg-[#eaedff] h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div
                     className="bg-[#4648d4] h-full rounded-full transition-all duration-500"
                     style={{ width: `${(engAvg / 50) * 100}%` }}
@@ -530,28 +549,28 @@ export const MarksView: React.FC = () => {
 
       {/* VIEW 3: Report Card Preview */}
       {activeSubView === 'report' && (
-        <section className="space-y-4">
-          <div className="bg-white rounded-3xl shadow-lg p-5 space-y-4 border border-[#eaedff]">
+        <section className="space-y-3 sm:space-y-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs p-3.5 sm:p-5 space-y-3 sm:space-y-4 border border-[#eaedff]">
             {/* Dynamic Institution Header */}
-            <div className="flex items-center justify-between pb-3 bg-[#f2f3ff] p-3 rounded-2xl border border-[#dae2fd]/50">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between pb-2.5 bg-[#f2f3ff] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-[#dae2fd]/50">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={institution.logoUrl}
                   alt={institution.name}
-                  className="w-10 h-10 rounded-xl object-cover border border-[#dae2fd] shadow-xs"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-[#dae2fd] shadow-xs shrink-0"
                 />
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-[#131b2e]">{institution.name}</span>
-                  <span className="text-[11px] text-[#737686]">{institution.boardName} • Terminal Report Card</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs sm:text-sm font-bold text-[#131b2e] truncate">{institution.name}</span>
+                  <span className="text-[10px] sm:text-[11px] text-[#737686] truncate">{institution.boardName} • Report Card</span>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-white text-[#131b2e] rounded-full text-xs font-bold shadow-sm border border-[#dae2fd]">
+              <span className="px-2.5 py-0.5 bg-white text-[#131b2e] rounded-full text-[11px] sm:text-xs font-bold shadow-xs border border-[#dae2fd] shrink-0">
                 {selectedExam}
               </span>
             </div>
 
             {/* Student Selector Dropdown for Report */}
-            <div className="flex items-center justify-between bg-[#faf8ff] p-2.5 rounded-2xl border border-[#eaedff]">
+            <div className="flex items-center justify-between bg-[#faf8ff] p-2.5 rounded-xl sm:rounded-2xl border border-[#eaedff]">
               <span className="text-xs text-[#737686] font-medium">Select Student:</span>
               <select
                 value={reportTargetStudent?.id}
@@ -559,7 +578,7 @@ export const MarksView: React.FC = () => {
                   const target = students.find(s => s.id === e.target.value);
                   if (target) setActiveStudentForReport(target);
                 }}
-                className="bg-white px-3 py-1 rounded-xl text-xs font-bold text-[#131b2e] border border-[#dae2fd]"
+                className="bg-white px-2.5 py-1 rounded-xl text-xs font-bold text-[#131b2e] border border-[#dae2fd]"
               >
                 {classStudents.map(s => (
                   <option key={s.id} value={s.id}>
@@ -571,42 +590,31 @@ export const MarksView: React.FC = () => {
 
             {/* Student Bio Details Strip */}
             {reportTargetStudent && (
-              <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-[#eaedff]">
+              <div className="flex items-center gap-3 bg-white p-2 rounded-xl sm:rounded-2xl border border-[#eaedff]">
                 <img
-                  className="w-14 h-14 rounded-2xl object-cover shadow-sm ring-1 ring-[#004ac6]/20"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover shadow-xs ring-1 ring-[#004ac6]/20 shrink-0"
                   src={reportTargetStudent.avatarUrl}
                   alt={reportTargetStudent.name}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-base text-[#131b2e] truncate">{reportTargetStudent.name}</h4>
-                    <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] text-[10px] font-extrabold">
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="font-bold text-sm sm:text-base text-[#131b2e] truncate">{reportTargetStudent.name}</h4>
+                    <span className="px-1.5 py-0.2 rounded-full bg-[#bdffdb] text-[#002113] text-[9px] sm:text-[10px] font-extrabold shrink-0">
                       Rank #{reportRank}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-xs text-[#737686]">
-                    <span>
-                      Roll No: <strong className="text-[#131b2e]">{reportTargetStudent.rollNo}</strong>
-                    </span>
-                    <span>
-                      Class: <strong className="text-[#131b2e]">{reportTargetStudent.classSec}</strong>
-                    </span>
-                    <span>
-                      Attendance: <strong className="text-[#007d55]">{reportTargetStudent.attendancePct}%</strong>
-                    </span>
-                    <span>
-                      Status:{' '}
-                      <strong className="text-[#004ac6]">
-                        {reportStats.pct >= 75 ? 'Passed (Distinction)' : 'Passed'}
-                      </strong>
-                    </span>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mt-1 text-[11px] text-[#737686]">
+                    <span>Roll: <strong className="text-[#131b2e]">{reportTargetStudent.rollNo}</strong></span>
+                    <span>Class: <strong className="text-[#131b2e]">{reportTargetStudent.classSec}</strong></span>
+                    <span>Attendance: <strong className="text-[#007d55]">{reportTargetStudent.attendancePct}%</strong></span>
+                    <span>Status: <strong className="text-[#004ac6]">{reportStats.pct >= 75 ? 'Passed (Distinction)' : 'Passed'}</strong></span>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Subject Marks Table */}
-            <div className="rounded-2xl overflow-hidden border border-[#dae2fd]">
+            <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-[#dae2fd]">
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#eaedff] text-[#737686] uppercase font-bold text-[10px]">
                   <tr>
@@ -618,57 +626,43 @@ export const MarksView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-[#f2f3ff]">
                   <tr>
-                    <td className="py-2.5 px-3 font-semibold">Mathematics</td>
-                    <td className="py-2.5 px-2 text-center text-[#737686]">50</td>
-                    <td className="py-2.5 px-2 text-center font-mono font-bold text-[#004ac6]">
-                      {reportTargetStudent?.marks.ut2.math}
-                    </td>
-                    <td className="py-2.5 px-2 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">
-                        A+
-                      </span>
+                    <td className="py-2 px-3 font-semibold">Mathematics</td>
+                    <td className="py-2 px-2 text-center text-[#737686]">50</td>
+                    <td className="py-2 px-2 text-center font-mono font-bold text-[#004ac6]">{reportTargetStudent?.marks.ut2.math}</td>
+                    <td className="py-2 px-2 text-center">
+                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">A+</span>
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-semibold">Science</td>
-                    <td className="py-2.5 px-2 text-center text-[#737686]">50</td>
-                    <td className="py-2.5 px-2 text-center font-mono font-bold text-[#004ac6]">
-                      {reportTargetStudent?.marks.ut2.sci}
-                    </td>
-                    <td className="py-2.5 px-2 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">
-                        A+
-                      </span>
+                    <td className="py-2 px-3 font-semibold">Science</td>
+                    <td className="py-2 px-2 text-center text-[#737686]">50</td>
+                    <td className="py-2 px-2 text-center font-mono font-bold text-[#004ac6]">{reportTargetStudent?.marks.ut2.sci}</td>
+                    <td className="py-2 px-2 text-center">
+                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">A+</span>
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-semibold">English</td>
-                    <td className="py-2.5 px-2 text-center text-[#737686]">50</td>
-                    <td className="py-2.5 px-2 text-center font-mono font-bold text-[#004ac6]">
-                      {reportTargetStudent?.marks.ut2.eng}
-                    </td>
-                    <td className="py-2.5 px-2 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">
-                        A+
-                      </span>
+                    <td className="py-2 px-3 font-semibold">English</td>
+                    <td className="py-2 px-2 text-center text-[#737686]">50</td>
+                    <td className="py-2 px-2 text-center font-mono font-bold text-[#004ac6]">{reportTargetStudent?.marks.ut2.eng}</td>
+                    <td className="py-2 px-2 text-center">
+                      <span className="px-2 py-0.5 rounded-full bg-[#bdffdb] text-[#002113] font-bold text-[10px]">A+</span>
                     </td>
                   </tr>
                   <tr className="bg-[#f2f3ff] font-bold text-[#131b2e]">
-                    <td className="py-2.5 px-3">Aggregate Grand Total</td>
-                    <td className="py-2.5 px-2 text-center">150</td>
-                    <td className="py-2.5 px-2 text-center font-mono text-[#004ac6]">
-                      {reportStats.total} ({reportStats.pct}%)
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-[#007d55]">{reportStats.grade}</td>
+                    <td className="py-2 px-3">Aggregate Grand Total</td>
+                    <td className="py-2 px-2 text-center">150</td>
+                    <td className="py-2 px-2 text-center font-mono text-[#004ac6]">{reportStats.total} ({reportStats.pct}%)</td>
+                    <td className="py-2 px-2 text-center text-[#007d55]">{reportStats.grade}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Teacher Remarks Box */}
-            <div className="bg-[#f2f3ff] p-3 rounded-2xl space-y-1 border border-[#dae2fd]/50">
+            <div className="bg-[#f2f3ff] p-2.5 sm:p-3 rounded-xl sm:rounded-2xl space-y-1 border border-[#dae2fd]/50">
               <div className="flex items-center gap-1.5 text-[#004ac6]">
-                <span className="material-symbols-outlined text-[16px]">edit_note</span>
+                <PenTool className="w-3.5 h-3.5" />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Faculty Remarks</span>
               </div>
               <p className="text-xs text-[#131b2e] italic">
@@ -676,17 +670,17 @@ export const MarksView: React.FC = () => {
               </p>
             </div>
 
-            {/* Signatures & Authority Stamps with Dynamic Principal Name */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="flex flex-col items-center bg-[#f2f3ff] p-2.5 rounded-2xl text-center border border-[#dae2fd]/50">
-                <span className="material-symbols-outlined text-[#737686] text-[22px] mb-0.5">draw</span>
+            {/* Signatures & Authority Stamps */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-1">
+              <div className="flex flex-col items-center bg-[#f2f3ff] p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-center border border-[#dae2fd]/50">
+                <PenTool className="w-4 h-4 text-[#737686] mb-0.5" />
                 <span className="text-xs font-bold text-[#131b2e]">Senior Faculty</span>
                 <span className="text-[10px] text-[#737686]">Class Teacher</span>
               </div>
-              <div className="flex flex-col items-center bg-[#f2f3ff] p-2.5 rounded-2xl text-center border border-[#dae2fd]/50">
-                <span className="material-symbols-outlined text-[#004ac6] text-[22px] mb-0.5">approval_delegation</span>
-                <span className="text-xs font-bold text-[#131b2e]">{institution.principalName}</span>
-                <span className="text-[10px] text-[#737686]">{institution.principalDesignation}</span>
+              <div className="flex flex-col items-center bg-[#f2f3ff] p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-center border border-[#dae2fd]/50">
+                <CheckSquare className="w-4 h-4 text-[#004ac6] mb-0.5" />
+                <span className="text-xs font-bold text-[#131b2e] truncate">{institution.principalName}</span>
+                <span className="text-[10px] text-[#737686] truncate">{institution.principalDesignation}</span>
               </div>
             </div>
           </div>
@@ -705,10 +699,10 @@ export const MarksView: React.FC = () => {
                   });
                 }
               }}
-              className="h-11 bg-[#007d55] hover:bg-[#006644] text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+              className="h-10 sm:h-11 bg-[#007d55] hover:bg-[#006644] text-white rounded-xl sm:rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs active:scale-95 transition-all"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px]">send</span>
+              <Send className="w-4 h-4" />
               <span>Push PDF & WhatsApp to Parent</span>
             </button>
 
@@ -724,10 +718,10 @@ export const MarksView: React.FC = () => {
                   });
                 }
               }}
-              className="h-11 bg-white border border-[#dae2fd] text-[#131b2e] hover:bg-[#eaedff] rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              className="h-10 sm:h-11 bg-white border border-[#dae2fd] text-[#131b2e] hover:bg-[#eaedff] rounded-xl sm:rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px] text-[#004ac6]">forward_to_inbox</span>
+              <Mail className="w-4 h-4 text-[#004ac6]" />
               <span>Send Copy to Principal</span>
             </button>
           </div>

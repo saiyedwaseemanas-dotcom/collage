@@ -2,6 +2,18 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { CLIENT_PRESETS } from '../data/brandingPresets';
 import { InstitutionProfile } from '../types';
+import {
+  Building2,
+  Download,
+  Upload,
+  SlidersHorizontal,
+  ImageIcon,
+  School,
+  UserCheck,
+  MapPin,
+  MessageSquare,
+  Save,
+} from 'lucide-react';
 
 export const InstitutionCustomizerView: React.FC = () => {
   const { institution, updateInstitution, applyClientPreset, showToast } = useApp();
@@ -77,32 +89,32 @@ export const InstitutionCustomizerView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full px-4 py-3 space-y-4 max-w-6xl mx-auto text-left pb-24">
+    <div className="flex flex-col w-full px-2.5 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 max-w-6xl mx-auto text-left pb-24">
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-2xl bg-[#004ac6] text-white flex items-center justify-center shadow-md">
-              <span className="material-symbols-outlined text-[24px]">branding_watermark</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-[#004ac6] text-white flex items-center justify-center shadow-xs shrink-0">
+              <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#131b2e]">School & College Customizer</h2>
-              <p className="text-xs text-[#737686]">White-label rebranding hub to customize and sell this platform to any school or college client.</p>
+              <h2 className="text-lg sm:text-2xl font-bold text-[#131b2e]">School & College Customizer</h2>
+              <p className="text-[11px] sm:text-xs text-[#737686]">White-label rebranding hub to customize and sell this platform to any school or college client.</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
             <button
               type="button"
               onClick={handleExportClientConfig}
-              className="h-9 px-3 bg-white border border-[#dae2fd] hover:bg-[#eaedff] text-[#131b2e] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm"
+              className="h-9 px-3 bg-white border border-[#dae2fd] hover:bg-[#eaedff] text-[#131b2e] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-95"
             >
-              <span className="material-symbols-outlined text-[16px]">file_download</span>
-              Export Client JSON
+              <Download className="w-3.5 h-3.5" />
+              <span className="truncate">Export JSON</span>
             </button>
-            <label className="h-9 px-3 bg-[#dbe1ff] hover:bg-[#c7d2fe] text-[#004ac6] text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-sm">
-              <span className="material-symbols-outlined text-[16px]">file_upload</span>
-              Import Config
+            <label className="h-9 px-3 bg-[#dbe1ff] hover:bg-[#c7d2fe] text-[#004ac6] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95">
+              <Upload className="w-3.5 h-3.5" />
+              <span className="truncate">Import Config</span>
               <input type="file" accept=".json" onChange={handleImportClientConfig} className="hidden" />
             </label>
           </div>
@@ -110,25 +122,25 @@ export const InstitutionCustomizerView: React.FC = () => {
       </div>
 
       {/* 1-Click Client Presets Bar */}
-      <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-3">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-2.5 sm:space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#004ac6] text-[20px]">tune</span>
-            <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Quick Client Presets (1-Click Switcher)</h3>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-[#004ac6]" />
+            <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Quick Client Presets</h3>
           </div>
           <span className="text-[10px] bg-[#dbe1ff] text-[#004ac6] font-bold px-2 py-0.5 rounded-full">
-            Instant Demo Ready
+            1-Click Demo
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
           {CLIENT_PRESETS.map(preset => {
             const isSelected = formData.id === preset.id;
             return (
               <div
                 key={preset.id}
                 onClick={() => handlePresetSelect(preset)}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 text-left ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 text-left active:scale-95 ${
                   isSelected
                     ? 'border-[#004ac6] bg-[#004ac6]/5 ring-2 ring-[#004ac6]/20'
                     : 'border-[#eaedff] bg-[#faf8ff] hover:bg-[#f2f3ff]'
@@ -138,11 +150,11 @@ export const InstitutionCustomizerView: React.FC = () => {
                   <img
                     src={preset.logoUrl}
                     alt={preset.shortName}
-                    className="w-8 h-8 rounded-lg object-cover border border-[#dae2fd]"
+                    className="w-8 h-8 rounded-lg object-cover border border-[#dae2fd] shrink-0"
                   />
                   <div className="min-w-0">
                     <h4 className="font-bold text-xs text-[#131b2e] truncate">{preset.shortName}</h4>
-                    <span className="text-[10px] text-[#737686] block">{preset.category} • {preset.boardName.split(' ')[0]}</span>
+                    <span className="text-[10px] text-[#737686] block truncate">{preset.category} • {preset.boardName.split(' ')[0]}</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-[#dae2fd]/40 text-[10px]">
@@ -158,46 +170,46 @@ export const InstitutionCustomizerView: React.FC = () => {
       </div>
 
       {/* Main Branding Form + Live Preview */}
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Left 2 Columns: Editable Inputs */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {/* Logo Replacement Card */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-[#f2f3ff]">
-              <span className="material-symbols-outlined text-[#004ac6] text-[20px]">image</span>
+              <ImageIcon className="w-4 h-4 text-[#004ac6]" />
               <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Replace Institution Logo</h3>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="relative group">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+              <div className="relative group shrink-0">
                 <img
                   src={logoPreview}
                   alt="Institution Logo Preview"
-                  className="w-24 h-24 rounded-2xl object-cover border-2 border-[#004ac6]/30 shadow-md bg-white p-1"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-[#004ac6]/30 shadow-xs bg-white p-1"
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold"
+                  className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold active:scale-95"
                 >
-                  <span className="material-symbols-outlined text-[20px]">cloud_upload</span>
-                  Upload
+                  <Upload className="w-5 h-5 mb-0.5" />
+                  <span>Upload</span>
                 </button>
               </div>
 
-              <div className="flex-1 space-y-2 text-left">
+              <div className="flex-1 space-y-2 text-left w-full">
                 <h4 className="font-bold text-xs text-[#131b2e]">Upload Custom School / College Logo</h4>
-                <p className="text-[11px] text-[#737686]">
+                <p className="text-[10px] sm:text-[11px] text-[#737686]">
                   Supports PNG, JPG, SVG, and WebP (up to 2MB). This logo will appear on all headers, PDF report cards, and student ID cards.
                 </p>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-9 px-4 bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                    className="h-9 px-3.5 bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
                   >
-                    <span className="material-symbols-outlined text-[18px]">upload</span>
-                    Choose Logo File
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Choose File</span>
                   </button>
                   <input
                     type="file"
@@ -214,7 +226,7 @@ export const InstitutionCustomizerView: React.FC = () => {
                       setFormData(prev => ({ ...prev, logoUrl: sample }));
                       showToast('Reset to default academic crest');
                     }}
-                    className="h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#434655] text-xs font-bold rounded-xl border border-[#dae2fd]"
+                    className="h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#434655] text-xs font-bold rounded-xl border border-[#dae2fd] active:scale-95"
                   >
                     Reset Logo
                   </button>
@@ -224,15 +236,15 @@ export const InstitutionCustomizerView: React.FC = () => {
           </div>
 
           {/* Core Profile Details */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-[#f2f3ff]">
-              <span className="material-symbols-outlined text-[#004ac6] text-[20px]">account_balance</span>
+              <School className="w-4 h-4 text-[#004ac6]" />
               <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Institution Identity & Board</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Full Institution Name</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Full Institution Name</label>
                 <input
                   type="text"
                   required
@@ -244,7 +256,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Short Display Name</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Short Display Name</label>
                 <input
                   type="text"
                   required
@@ -256,9 +268,9 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Institution Type</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Institution Type</label>
                 <select
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value as any })}
@@ -272,7 +284,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Board / Accreditation / Council</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Board / Accreditation / Council</label>
                 <input
                   type="text"
                   value={formData.boardName}
@@ -283,9 +295,9 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Affiliation / Registration Code</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Affiliation Code</label>
                 <input
                   type="text"
                   value={formData.affiliationCode}
@@ -296,7 +308,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Academic Session / Term</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Academic Session / Term</label>
                 <input
                   type="text"
                   value={formData.academicSession}
@@ -308,7 +320,7 @@ export const InstitutionCustomizerView: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-[#737686]">Motto / Tagline</label>
+              <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Motto / Tagline</label>
               <input
                 type="text"
                 value={formData.tagline}
@@ -320,15 +332,15 @@ export const InstitutionCustomizerView: React.FC = () => {
           </div>
 
           {/* Principal & Executive Authorities */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-[#f2f3ff]">
-              <span className="material-symbols-outlined text-[#007d55] text-[20px]">badge</span>
+              <UserCheck className="w-4 h-4 text-[#007d55]" />
               <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Executive Authority (Principal / Dean)</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Authority Title</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Authority Title</label>
                 <select
                   value={formData.principalDesignation}
                   onChange={e => setFormData({ ...formData, principalDesignation: e.target.value as any })}
@@ -343,7 +355,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Principal / Dean Full Name</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Principal / Dean Full Name</label>
                 <input
                   type="text"
                   required
@@ -355,9 +367,9 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Principal WhatsApp Number</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Principal WhatsApp</label>
                 <input
                   type="text"
                   required
@@ -369,7 +381,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Principal Official Email</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Principal Official Email</label>
                 <input
                   type="email"
                   required
@@ -383,15 +395,15 @@ export const InstitutionCustomizerView: React.FC = () => {
           </div>
 
           {/* Contact & Location Details */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-[#f2f3ff]">
-              <span className="material-symbols-outlined text-[#004ac6] text-[20px]">location_on</span>
+              <MapPin className="w-4 h-4 text-[#004ac6]" />
               <h3 className="font-bold text-xs sm:text-sm text-[#131b2e]">Campus Contact & Location</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">General Phone</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">General Phone</label>
                 <input
                   type="text"
                   value={formData.phone}
@@ -401,7 +413,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">General Email</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">General Email</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -411,7 +423,7 @@ export const InstitutionCustomizerView: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-[#737686]">Website URL</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Website URL</label>
                 <input
                   type="text"
                   value={formData.website}
@@ -422,7 +434,7 @@ export const InstitutionCustomizerView: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-[#737686]">Campus Physical Address</label>
+              <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Campus Physical Address</label>
               <input
                 type="text"
                 value={formData.address}
@@ -435,9 +447,9 @@ export const InstitutionCustomizerView: React.FC = () => {
         </div>
 
         {/* Right Column: Live Branding Mockup Preview & Save */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Live Header Mockup */}
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-[#eaedff] space-y-3 sticky top-20">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3 sticky top-20">
             <div className="flex items-center justify-between pb-2 border-b border-[#f2f3ff]">
               <span className="text-xs font-bold text-[#131b2e]">Live Client Preview</span>
               <span className="px-2 py-0.5 bg-[#bdffdb] text-[#002113] font-bold text-[10px] rounded-full">
@@ -446,13 +458,13 @@ export const InstitutionCustomizerView: React.FC = () => {
             </div>
 
             {/* App Header Preview */}
-            <div className="p-3 bg-[#f2f3ff] rounded-2xl border border-[#dae2fd] space-y-2">
+            <div className="p-2.5 sm:p-3 bg-[#f2f3ff] rounded-xl sm:rounded-2xl border border-[#dae2fd] space-y-2">
               <span className="text-[10px] font-bold uppercase text-[#737686]">App Top Header</span>
-              <div className="flex items-center gap-2.5 bg-white p-2.5 rounded-xl shadow-xs">
+              <div className="flex items-center gap-2 bg-white p-2 rounded-xl shadow-xs">
                 <img
                   src={logoPreview}
                   alt="Logo"
-                  className="w-8 h-8 rounded-lg object-cover border border-[#dae2fd]"
+                  className="w-8 h-8 rounded-lg object-cover border border-[#dae2fd] shrink-0"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
@@ -465,21 +477,21 @@ export const InstitutionCustomizerView: React.FC = () => {
             </div>
 
             {/* PDF Report Header Preview */}
-            <div className="p-3 bg-[#004ac6] text-white rounded-2xl space-y-1 text-center shadow-sm">
+            <div className="p-3 bg-[#004ac6] text-white rounded-xl sm:rounded-2xl space-y-1 text-center shadow-xs">
               <span className="text-[9px] uppercase font-bold text-white/70 block">PDF Report Header</span>
-              <h4 className="font-bold text-xs leading-tight">{formData.name.toUpperCase()}</h4>
-              <p className="text-[9px] text-white/80">{formData.boardName} • {formData.affiliationCode}</p>
-              <p className="text-[8.5px] text-white/70">{formData.address}</p>
+              <h4 className="font-bold text-xs leading-tight truncate">{formData.name.toUpperCase()}</h4>
+              <p className="text-[9px] text-white/80 truncate">{formData.boardName} • {formData.affiliationCode}</p>
+              <p className="text-[8.5px] text-white/70 truncate">{formData.address}</p>
             </div>
 
             {/* WhatsApp Notification Preview */}
-            <div className="p-3 bg-[#007d55]/10 border border-[#007d55]/30 rounded-2xl space-y-1 text-left">
+            <div className="p-2.5 sm:p-3 bg-[#007d55]/10 border border-[#007d55]/30 rounded-xl sm:rounded-2xl space-y-1 text-left">
               <span className="text-[9px] font-bold uppercase text-[#007d55] flex items-center gap-1">
-                <span className="material-symbols-outlined text-[13px]">chat</span>
+                <MessageSquare className="w-3 h-3" />
                 WhatsApp Parent Alert Template
               </span>
               <div className="bg-white p-2 rounded-xl text-[10px] text-[#131b2e] leading-relaxed shadow-xs font-mono">
-                <strong className="text-[#007d55] block">{formData.name.toUpperCase()}</strong>
+                <strong className="text-[#007d55] block truncate">{formData.name.toUpperCase()}</strong>
                 <span>Dear Parent, here is the updated attendance for your ward: <strong>92.5%</strong>. Verified by <strong>{formData.principalDesignation} {formData.principalName}</strong>.</span>
               </div>
             </div>
@@ -487,10 +499,10 @@ export const InstitutionCustomizerView: React.FC = () => {
             {/* Submit Save Button */}
             <button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] hover:opacity-95 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 sm:h-12 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] hover:opacity-95 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-              <span className="material-symbols-outlined text-[20px]">save</span>
-              Save & Apply Client Branding
+              <Save className="w-4 h-4" />
+              <span>Save & Apply Branding</span>
             </button>
           </div>
         </div>

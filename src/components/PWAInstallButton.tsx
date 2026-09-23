@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { CheckCircle2, Download, Share2, Smartphone, X } from 'lucide-react';
 
 interface PWAInstallButtonProps {
   className?: string;
@@ -17,13 +18,13 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ className, o
         onClick={onOpenApkModal}
         className={
           className ||
-          'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#bdffdb] text-[#002113] text-xs font-bold transition-all shadow-sm hover:opacity-90'
+          'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#bdffdb] text-[#002113] text-xs font-bold transition-all shadow-xs hover:opacity-90 active:scale-95'
         }
         title="App Installed - Click for APK & Mobile settings"
         type="button"
       >
-        <span className="material-symbols-outlined text-[16px] text-[#007d55]">check_circle</span>
-        <span>App Installed</span>
+        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#007d55] shrink-0" />
+        <span className="whitespace-nowrap">Installed</span>
       </button>
     );
   }
@@ -35,12 +36,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ className, o
         onClick={install}
         className={
           className ||
-          'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold transition-all shadow-sm active:scale-95'
+          'flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold transition-all shadow-xs active:scale-95'
         }
         type="button"
       >
-        <span className="material-symbols-outlined text-[16px]">install_mobile</span>
-        <span>Install App</span>
+        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+        <span className="whitespace-nowrap">Install App</span>
       </button>
     );
   }
@@ -53,12 +54,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ className, o
           onClick={() => setShowIOSGuide(true)}
           className={
             className ||
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] text-xs font-bold transition-all'
+            'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] text-xs font-bold transition-all active:scale-95'
           }
           type="button"
         >
-          <span className="material-symbols-outlined text-[16px]">ios_share</span>
-          <span>Install iOS</span>
+          <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+          <span className="whitespace-nowrap">Install iOS</span>
         </button>
 
         {showIOSGuide && (
@@ -66,15 +67,15 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ className, o
             <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl text-left border border-[#eaedff]">
               <div className="flex items-center justify-between pb-2 border-b border-[#f2f3ff]">
                 <h3 className="text-sm font-bold text-[#131b2e] flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[#004ac6] text-[20px]">phone_iphone</span>
+                  <Smartphone className="w-5 h-5 text-[#004ac6] shrink-0" />
                   Install on iPhone / iPad
                 </h3>
                 <button
                   onClick={() => setShowIOSGuide(false)}
-                  className="w-7 h-7 rounded-full bg-[#f2f3ff] flex items-center justify-center text-[#737686]"
+                  className="w-7 h-7 rounded-full bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:bg-[#eaedff]"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[16px]">close</span>
+                  <X className="w-4 h-4" />
                 </button>
               </div>
               <p className="mt-3 text-xs text-[#434655] leading-relaxed">
@@ -102,13 +103,13 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ className, o
       onClick={onOpenApkModal}
       className={
         className ||
-        'flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] text-xs font-bold transition-all'
+        'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] text-xs font-bold transition-all active:scale-95'
       }
       type="button"
       title="Build Android APK or Install"
     >
-      <span className="material-symbols-outlined text-[16px] text-[#007d55]">android</span>
-      <span>Build APK</span>
+      <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#007d55] shrink-0" />
+      <span className="whitespace-nowrap">Build APK</span>
     </button>
   );
 };

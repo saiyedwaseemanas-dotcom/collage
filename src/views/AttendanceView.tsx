@@ -1,8 +1,26 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { AttendanceStatus, Student } from '../types';
+import { Student } from '../types';
 import { StudentDetailModal } from '../components/StudentDetailModal';
 import { StudentEditModal } from '../components/StudentEditModal';
+import {
+  GraduationCap,
+  UserCheck,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Send,
+  Plus,
+  CheckCheck,
+  AlertTriangle,
+  FileSpreadsheet,
+  FileText,
+  MessageCircle,
+  Edit3,
+  RefreshCw,
+  LogIn,
+  LogOut,
+} from 'lucide-react';
 
 export const AttendanceView: React.FC = () => {
   const {
@@ -80,53 +98,53 @@ export const AttendanceView: React.FC = () => {
         <div className="p-1 bg-[#eaedff] rounded-2xl flex items-center justify-between shadow-inner">
           <button
             onClick={() => setActiveSubTab('student')}
-            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
               activeSubTab === 'student'
-                ? 'bg-white text-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] shadow-xs'
                 : 'text-[#434655] hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">school</span>
+            <GraduationCap className="w-4 h-4 shrink-0" />
             <span className="truncate">Student Register</span>
           </button>
           <button
             onClick={() => setActiveSubTab('faculty')}
-            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
               activeSubTab === 'faculty'
-                ? 'bg-white text-[#004ac6] shadow-sm'
+                ? 'bg-white text-[#004ac6] shadow-xs'
                 : 'text-[#434655] hover:text-[#131b2e]'
             }`}
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">badge</span>
+            <UserCheck className="w-4 h-4 shrink-0" />
             <span className="truncate">Faculty Biometric</span>
           </button>
         </div>
 
         {/* Date Strip & Shift Navigator + Push Button */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-[#eaedff] gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-white p-3 rounded-2xl shadow-xs border border-[#eaedff] gap-2.5">
           <div className="flex items-center justify-between gap-2">
             <button
               onClick={() => shiftDate(-1)}
-              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0"
+              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0 active:scale-95"
               type="button"
               title="Previous Day"
             >
-              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="material-symbols-outlined text-[#004ac6] text-[18px] shrink-0">calendar_today</span>
+              <Calendar className="w-4 h-4 text-[#004ac6] shrink-0" />
               <span className="font-bold text-xs sm:text-sm text-[#131b2e] truncate">{currentDateLabel}</span>
               <span className="w-2 h-2 rounded-full bg-[#007d55] animate-pulse shrink-0"></span>
             </div>
             <button
               onClick={() => shiftDate(1)}
-              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0"
+              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0 active:scale-95"
               type="button"
               title="Next Day"
             >
-              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
@@ -141,10 +159,10 @@ export const AttendanceView: React.FC = () => {
                   targetClass: selectedClass,
                 })
               }
-              className="h-10 sm:h-9 px-3 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              className="h-10 sm:h-9 px-3 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
               type="button"
             >
-              <span className="material-symbols-outlined text-[16px]">send</span>
+              <Send className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Push Report</span>
             </button>
 
@@ -154,10 +172,10 @@ export const AttendanceView: React.FC = () => {
                 setIsNewStudent(true);
                 setIsEditModalOpen(true);
               }}
-              className="h-10 sm:h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+              className="h-10 sm:h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors active:scale-95"
               type="button"
             >
-              <span className="material-symbols-outlined text-[16px]">add</span>
+              <Plus className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Add Student</span>
             </button>
           </div>
@@ -175,9 +193,9 @@ export const AttendanceView: React.FC = () => {
                 <button
                   key={cls}
                   onClick={() => setSelectedClass(cls)}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 active:scale-95 ${
                     isSelected
-                      ? 'bg-[#004ac6] text-white shadow-sm'
+                      ? 'bg-[#004ac6] text-white shadow-xs'
                       : 'text-[#434655] bg-white border border-[#dae2fd] hover:bg-[#eaedff]'
                   }`}
                   type="button"
@@ -227,20 +245,20 @@ export const AttendanceView: React.FC = () => {
                 className="flex-1 sm:flex-initial h-10 px-3.5 bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[17px]">done_all</span>
+                <CheckCheck className="w-4 h-4 shrink-0" />
                 <span>Mark All Present</span>
               </button>
 
               <button
                 onClick={() => setFilterDefaultersOnly(prev => !prev)}
-                className={`flex-1 sm:flex-initial h-10 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all ${
+                className={`flex-1 sm:flex-initial h-10 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 ${
                   filterDefaultersOnly
                     ? 'bg-[#ba1a1a] text-white'
                     : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffdad6]/80'
                 }`}
                 type="button"
               >
-                <span className="material-symbols-outlined text-[16px]">warning</span>
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">&lt;{institution.defaulterThreshold}%</span>
                 <span
                   className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
@@ -262,10 +280,10 @@ export const AttendanceView: React.FC = () => {
                     defaultRecipientType: 'principal',
                   })
                 }
-                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff]"
+                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff] active:scale-95 transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[16px] text-[#007d55]">table_view</span>
+                <FileSpreadsheet className="w-4 h-4 text-[#007d55]" />
                 <span>Excel</span>
               </button>
               <button
@@ -277,10 +295,10 @@ export const AttendanceView: React.FC = () => {
                     defaultRecipientType: 'principal',
                   })
                 }
-                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff]"
+                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff] active:scale-95 transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">picture_as_pdf</span>
+                <FileText className="w-4 h-4 text-[#ba1a1a]" />
                 <span>PDF</span>
               </button>
             </div>
@@ -293,7 +311,7 @@ export const AttendanceView: React.FC = () => {
               return (
                 <div
                   key={student.id}
-                  className={`bg-white p-3 sm:p-3.5 rounded-3xl shadow-sm border transition-all flex flex-col gap-2.5 ${
+                  className={`bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border transition-all flex flex-col gap-2.5 ${
                     isDefaulter
                       ? 'border-[#ba1a1a]/40 bg-[#fffbfa]'
                       : 'border-[#eaedff]'
@@ -339,17 +357,17 @@ export const AttendanceView: React.FC = () => {
                           className="h-8 px-2.5 rounded-xl bg-[#ba1a1a] text-white flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-xs active:scale-95 transition-transform"
                           type="button"
                         >
-                          <span className="material-symbols-outlined text-[15px]">send</span>
+                          <Send className="w-3.5 h-3.5" />
                           <span>Alert</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleOpenWhatsApp(student)}
-                          className="h-8 px-2.5 rounded-xl bg-[#007d55] text-white flex items-center gap-1 text-[11px] sm:text-xs font-bold hover:bg-[#006644] transition-colors"
+                          className="h-8 px-2.5 rounded-xl bg-[#007d55] text-white flex items-center gap-1 text-[11px] sm:text-xs font-bold hover:bg-[#006644] transition-colors active:scale-95"
                           type="button"
                           title="WhatsApp Parent"
                         >
-                          <span className="material-symbols-outlined text-[15px]">chat</span>
+                          <MessageCircle className="w-3.5 h-3.5" />
                           <span className="hidden xs:inline">WA</span>
                         </button>
                       )}
@@ -360,16 +378,16 @@ export const AttendanceView: React.FC = () => {
                           setIsNewStudent(false);
                           setIsEditModalOpen(true);
                         }}
-                        className="w-8 h-8 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] flex items-center justify-center text-[#004ac6] border border-[#dae2fd] shrink-0"
+                        className="w-8 h-8 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] flex items-center justify-center text-[#004ac6] border border-[#dae2fd] shrink-0 active:scale-95 transition-all"
                         title="Edit Student"
                       >
-                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Segmented Buttons (P / A / L / HD) - 44px min touch height on mobile */}
-                  <div className="grid grid-cols-4 bg-[#f2f3ff] p-1 rounded-2xl gap-1 border border-[#dae2fd]/50">
+                  {/* Segmented Buttons (P / A / L / HD) - 40px touch height on mobile */}
+                  <div className="grid grid-cols-4 bg-[#f2f3ff] p-1 rounded-xl sm:rounded-2xl gap-1 border border-[#dae2fd]/50">
                     {(['P', 'A', 'L', 'HD'] as const).map(code => {
                       const isActive = student.todayStatus === code;
                       let activeClass = 'bg-[#007d55] text-white font-bold shadow-xs';
@@ -381,7 +399,7 @@ export const AttendanceView: React.FC = () => {
                         <button
                           key={code}
                           onClick={() => updateStudentAttendance(student.id, code)}
-                          className={`h-9 sm:h-8 rounded-xl text-xs font-semibold text-center transition-all flex items-center justify-center ${
+                          className={`h-9 sm:h-8 rounded-lg sm:rounded-xl text-xs font-semibold text-center transition-all flex items-center justify-center active:scale-95 ${
                             isActive
                               ? activeClass
                               : 'text-[#434655] hover:bg-white/80'
@@ -399,7 +417,7 @@ export const AttendanceView: React.FC = () => {
           </div>
 
           {/* Sticky Bottom Save & Sync Dock */}
-          <div className="fixed bottom-16 left-0 right-0 z-30 px-3 sm:px-4 py-2 bg-[#faf8ff]/90 backdrop-blur-md">
+          <div className="fixed bottom-14 sm:bottom-16 left-0 right-0 z-30 px-3 sm:px-4 py-2 bg-[#faf8ff]/90 backdrop-blur-md">
             <div className="max-w-xl mx-auto bg-[#1e293b] text-[#eef0ff] p-2.5 sm:p-3 rounded-2xl shadow-xl flex items-center justify-between gap-2 border border-white/10">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -411,12 +429,10 @@ export const AttendanceView: React.FC = () => {
               <button
                 onClick={handlePushSheet}
                 disabled={isPushing}
-                className="h-9 px-3.5 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
+                className="h-9 px-3.5 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all shrink-0"
                 type="button"
               >
-                <span className={`material-symbols-outlined text-[16px] ${isPushing ? 'animate-spin' : ''}`}>
-                  sync
-                </span>
+                <RefreshCw className={`w-3.5 h-3.5 ${isPushing ? 'animate-spin' : ''}`} />
                 <span>{isPushing ? 'Saving...' : 'Save & Sync'}</span>
               </button>
             </div>
@@ -426,7 +442,7 @@ export const AttendanceView: React.FC = () => {
         /* Faculty Log View */
         <div className="flex flex-col gap-2.5 pb-28">
           {teachers.map(tch => (
-            <div key={tch.id} className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] space-y-2.5">
+            <div key={tch.id} className="bg-white p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <img
@@ -457,15 +473,15 @@ export const AttendanceView: React.FC = () => {
                 <div>
                   <span className="text-[9px] sm:text-[10px] text-[#737686] block">Biometric In</span>
                   <span className="font-bold font-mono flex items-center gap-1 text-[#007d55] text-xs">
-                    <span className="material-symbols-outlined text-[14px]">login</span>
-                    {tch.biometricCheckIn}
+                    <LogIn className="w-3.5 h-3.5 shrink-0" />
+                    <span>{tch.biometricCheckIn}</span>
                   </span>
                 </div>
                 <div>
                   <span className="text-[9px] sm:text-[10px] text-[#737686] block">Scheduled Out</span>
                   <span className="font-bold font-mono flex items-center gap-1 text-[#737686] text-xs">
-                    <span className="material-symbols-outlined text-[14px]">logout</span>
-                    {tch.scheduledOut}
+                    <LogOut className="w-3.5 h-3.5 shrink-0" />
+                    <span>{tch.scheduledOut}</span>
                   </span>
                 </div>
               </div>

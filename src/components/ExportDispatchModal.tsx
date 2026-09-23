@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { generatePdfDocument, generateExcelDocument, generateCsvDocument, buildWhatsAppMessage, buildEmailDispatch } from '../utils/exportUtils';
-import { Student } from '../types';
+import {
+  Send,
+  X,
+  FileText,
+  FileSpreadsheet,
+  Building,
+  User,
+  Users,
+  Download,
+  Mail,
+  MessageCircle,
+} from 'lucide-react';
 
 export const ExportDispatchModal: React.FC = () => {
   const {
@@ -119,19 +130,19 @@ export const ExportDispatchModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-[#eaedff] flex flex-col max-h-[92vh] overflow-hidden text-left"
+        className="bg-white w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] flex flex-col max-h-[92vh] overflow-hidden text-left"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-3.5 sm:p-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-md shrink-0">
-              <span className="material-symbols-outlined text-[20px] sm:text-[24px]">send</span>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-md shrink-0">
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-sm sm:text-lg leading-tight truncate">
+              <h3 className="font-bold text-sm sm:text-base md:text-lg leading-tight truncate">
                 {dispatchModalConfig.title || 'Push & Dispatch Report'}
               </h3>
               <p className="text-[10px] sm:text-xs text-white/80 mt-0.5 truncate">
@@ -141,10 +152,10 @@ export const ExportDispatchModal: React.FC = () => {
           </div>
           <button
             onClick={closeDispatchModal}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white shrink-0 ml-2"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white shrink-0 ml-2 active:scale-95"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -152,21 +163,21 @@ export const ExportDispatchModal: React.FC = () => {
         <div className="p-3.5 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4">
           {/* Step 1: Choose File Format */}
           <div className="space-y-1.5">
-            <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686] flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px] text-[#004ac6]">description</span>
-              1. Select Export Format
+            <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686] flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-[#004ac6]" />
+              <span>1. Select Export Format</span>
             </label>
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setFormat('pdf')}
-                className={`p-2 sm:p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center ${
+                className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center active:scale-95 ${
                   format === 'pdf'
                     ? 'border-[#004ac6] bg-[#004ac6]/5 ring-2 ring-[#004ac6]/20'
                     : 'border-[#dae2fd] bg-[#faf8ff] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-[#ba1a1a]">picture_as_pdf</span>
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-[#ba1a1a]" />
                 <span className="text-[11px] sm:text-xs font-bold text-[#131b2e] leading-tight">Official PDF</span>
                 <span className="text-[9px] sm:text-[10px] text-[#737686] hidden xs:inline">Signed Copy</span>
               </button>
@@ -174,13 +185,13 @@ export const ExportDispatchModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormat('excel')}
-                className={`p-2 sm:p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center ${
+                className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center active:scale-95 ${
                   format === 'excel'
                     ? 'border-[#007d55] bg-[#007d55]/5 ring-2 ring-[#007d55]/20'
                     : 'border-[#dae2fd] bg-[#faf8ff] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-[#007d55]">table_chart</span>
+                <FileSpreadsheet className="w-5 h-5 sm:w-6 sm:h-6 text-[#007d55]" />
                 <span className="text-[11px] sm:text-xs font-bold text-[#131b2e] leading-tight">Excel (.xlsx)</span>
                 <span className="text-[9px] sm:text-[10px] text-[#737686] hidden xs:inline">Multi-Sheet</span>
               </button>
@@ -188,13 +199,13 @@ export const ExportDispatchModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormat('sheets')}
-                className={`p-2 sm:p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center ${
+                className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all text-center active:scale-95 ${
                   format === 'sheets'
                     ? 'border-[#4648d4] bg-[#4648d4]/5 ring-2 ring-[#4648d4]/20'
                     : 'border-[#dae2fd] bg-[#faf8ff] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-[#4648d4]">sync_alt</span>
+                <FileSpreadsheet className="w-5 h-5 sm:w-6 sm:h-6 text-[#4648d4]" />
                 <span className="text-[11px] sm:text-xs font-bold text-[#131b2e] leading-tight">Sheets (CSV)</span>
                 <span className="text-[9px] sm:text-[10px] text-[#737686] hidden xs:inline">Live Sync</span>
               </button>
@@ -203,47 +214,47 @@ export const ExportDispatchModal: React.FC = () => {
 
           {/* Step 2: Choose Recipient Target */}
           <div className="space-y-1.5">
-            <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686] flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px] text-[#007d55]">person_pin</span>
-              2. Target Recipient
+            <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686] flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-[#007d55]" />
+              <span>2. Target Recipient</span>
             </label>
             <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setRecipientType('principal')}
-                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center ${
+                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center active:scale-95 ${
                   recipientType === 'principal'
                     ? 'border-[#004ac6] bg-[#dbe1ff] text-[#00174b]'
                     : 'border-[#dae2fd] bg-[#faf8ff] text-[#434655] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[15px]">account_balance</span>
+                <Building className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{institution.principalDesignation}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setRecipientType('parent')}
-                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center ${
+                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center active:scale-95 ${
                   recipientType === 'parent'
                     ? 'border-[#004ac6] bg-[#dbe1ff] text-[#00174b]'
                     : 'border-[#dae2fd] bg-[#faf8ff] text-[#434655] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[15px]">person</span>
+                <User className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">Student Parent</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setRecipientType('all-parents')}
-                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center ${
+                className={`p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all text-center active:scale-95 ${
                   recipientType === 'all-parents'
                     ? 'border-[#004ac6] bg-[#dbe1ff] text-[#00174b]'
                     : 'border-[#dae2fd] bg-[#faf8ff] text-[#434655] hover:bg-[#eaedff]'
                 }`}
               >
-                <span className="material-symbols-outlined text-[15px]">group</span>
+                <Users className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">All Parents</span>
               </button>
             </div>
@@ -312,9 +323,9 @@ export const ExportDispatchModal: React.FC = () => {
             type="button"
             onClick={handleDownload}
             disabled={isGenerating}
-            className="w-full sm:w-auto h-11 sm:h-10 px-4 bg-white hover:bg-[#eaedff] text-[#131b2e] border border-[#dae2fd] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs"
+            className="w-full sm:w-auto h-10 sm:h-10 px-4 bg-white hover:bg-[#eaedff] text-[#131b2e] border border-[#dae2fd] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs"
           >
-            <span className="material-symbols-outlined text-[18px]">download</span>
+            <Download className="w-4 h-4" />
             <span>Download {format.toUpperCase()}</span>
           </button>
 
@@ -322,18 +333,18 @@ export const ExportDispatchModal: React.FC = () => {
             <button
               type="button"
               onClick={handleEmailSend}
-              className="h-11 sm:h-10 px-3.5 bg-[#dbe1ff] hover:bg-[#c7d2fe] text-[#004ac6] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
+              className="h-10 px-3.5 bg-[#dbe1ff] hover:bg-[#c7d2fe] text-[#004ac6] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95"
             >
-              <span className="material-symbols-outlined text-[18px]">mail</span>
+              <Mail className="w-4 h-4" />
               <span>Email</span>
             </button>
 
             <button
               type="button"
               onClick={handleWhatsAppSend}
-              className="h-11 sm:h-10 px-4 bg-[#007d55] hover:bg-[#006644] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+              className="h-10 px-4 bg-[#007d55] hover:bg-[#006644] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
             >
-              <span className="material-symbols-outlined text-[18px]">send</span>
+              <MessageCircle className="w-4 h-4" />
               <span>WhatsApp</span>
             </button>
           </div>

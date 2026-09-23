@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Student } from '../types';
 import { useApp } from '../context/AppContext';
+import {
+  UserPlus,
+  UserCog,
+  X,
+  Users,
+  Trash2,
+  Save,
+} from 'lucide-react';
 
 interface StudentEditModalProps {
   student: Student | null;
@@ -91,18 +99,20 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-[#eaedff] flex flex-col max-h-[92vh] overflow-hidden text-left"
+        className="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#eaedff] flex flex-col max-h-[92vh] overflow-hidden text-left"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-[#004ac6] text-white p-3.5 sm:p-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[20px] sm:text-[24px]">
-                {isNew ? 'person_add' : 'manage_accounts'}
-              </span>
+              {isNew ? (
+                <UserPlus className="w-5 h-5 text-white" />
+              ) : (
+                <UserCog className="w-5 h-5 text-white" />
+              )}
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-sm sm:text-lg truncate">
@@ -115,10 +125,10 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 ml-2"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 ml-2 active:scale-95"
             type="button"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -132,7 +142,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
                 required
                 value={formData.rollNo}
                 onChange={e => setFormData({ ...formData, rollNo: e.target.value })}
-                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-mono font-bold text-[#131b2e] border border-[#dae2fd]"
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-mono font-bold text-[#131b2e] border border-[#dae2fd] focus:bg-white"
               />
             </div>
 
@@ -143,7 +153,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
                 required
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-semibold text-[#131b2e] border border-[#dae2fd]"
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-semibold text-[#131b2e] border border-[#dae2fd] focus:bg-white"
                 placeholder="e.g. Aarav Sharma"
               />
             </div>
@@ -178,21 +188,21 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
                 type="text"
                 value={formData.avatarUrl}
                 onChange={e => setFormData({ ...formData, avatarUrl: e.target.value })}
-                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd]"
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
               />
             </div>
           </div>
 
           {/* Parent & Contact Details */}
-          <div className="p-3 bg-[#f2f3ff] rounded-2xl border border-[#dae2fd] space-y-2.5">
+          <div className="p-3 bg-[#f2f3ff] rounded-xl sm:rounded-2xl border border-[#dae2fd] space-y-2.5">
             <h4 className="font-bold text-xs text-[#131b2e] flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-[#004ac6]">family_restroom</span>
+              <Users className="w-4 h-4 text-[#004ac6]" />
               Parent & WhatsApp Contact Info
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#737686]">Guardian Name</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Guardian Name</label>
                 <input
                   type="text"
                   required
@@ -204,7 +214,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#737686]">Relation</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Relation</label>
                 <select
                   value={formData.parentRelation}
                   onChange={e => setFormData({ ...formData, parentRelation: e.target.value as any })}
@@ -219,7 +229,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#737686]">Parent Phone (Call)</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Parent Phone (Call)</label>
                 <input
                   type="text"
                   value={formData.parentPhone}
@@ -229,7 +239,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#737686]">Parent WhatsApp</label>
+                <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Parent WhatsApp</label>
                 <input
                   type="text"
                   required
@@ -291,9 +301,9 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
               <button
                 type="button"
                 onClick={handleDelete}
-                className="h-11 sm:h-10 px-3.5 bg-[#ffdad6] hover:bg-[#ffb4ab] text-[#ba1a1a] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                className="h-10 px-3.5 bg-[#ffdad6] hover:bg-[#ffb4ab] text-[#ba1a1a] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95"
               >
-                <span className="material-symbols-outlined text-[18px]">delete</span>
+                <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Student</span>
               </button>
             )}
@@ -301,15 +311,15 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({ student, isO
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 sm:flex-initial h-11 sm:h-10 px-4 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#434655] text-xs font-bold rounded-xl"
+                className="flex-1 sm:flex-initial h-10 px-4 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#434655] text-xs font-bold rounded-xl active:scale-95"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 sm:flex-initial h-11 sm:h-10 px-5 bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-initial h-10 px-5 bg-[#004ac6] hover:bg-[#2563eb] text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
-                <span className="material-symbols-outlined text-[18px]">save</span>
+                <Save className="w-3.5 h-3.5" />
                 <span>{isNew ? 'Add Student' : 'Save'}</span>
               </button>
             </div>
