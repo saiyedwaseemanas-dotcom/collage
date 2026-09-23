@@ -1,0 +1,6 @@
+{
+  "name": "EduTrack Pro - School Administration & Academic Monitoring",
+  "description": "Enterprise academic tracking, student & faculty attendance registers, syllabus curriculum pacing, marksheet grading engine, and Google Sheets cloud data pipeline for DPS Sector 4.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
