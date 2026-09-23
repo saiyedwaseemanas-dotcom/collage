@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Student, Teacher, SubjectSyllabus, ActiveTab, AttendanceStatus, WebhookLog } from '../types';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Student, Teacher, SubjectSyllabus, ActiveTab, AttendanceStatus, WebhookLog, InstitutionProfile, DispatchModalConfig } from '../types';
 import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS } from '../data/mockData';
+import { DEFAULT_INSTITUTION, CLIENT_PRESETS } from '../data/brandingPresets';
 
 interface ToastInfo {
   id: string;
@@ -19,31 +20,43 @@ interface AppContextType {
   academicSession: string;
   setAcademicSession: (session: string) => void;
 
-  // Students & Attendance
+  // Institution / White-Label Client Rebranding
+  institution: InstitutionProfile;
+  updateInstitution: (profile: Partial<InstitutionProfile>) => void;
+  applyClientPreset: (presetId: string) => void;
+
+  // Students & Database CRUD
   students: Student[];
-  selectedClass: 'Class 10-A' | 'Class 10-B' | 'Class 9-A';
-  setSelectedClass: (cls: 'Class 10-A' | 'Class 10-B' | 'Class 9-A') => void;
+  selectedClass: 'Class 10-A' | 'Class 10-B' | 'Class 9-A' | 'Class 11-Sci' | 'Class 12-Sci' | string;
+  setSelectedClass: (cls: 'Class 10-A' | 'Class 10-B' | 'Class 9-A' | 'Class 11-Sci' | 'Class 12-Sci' | string) => void;
   currentDateLabel: string;
   shiftDate: (dir: number) => void;
   updateStudentAttendance: (studentId: string, status: AttendanceStatus) => void;
   markAllPresent: () => void;
   filterDefaultersOnly: boolean;
   setFilterDefaultersOnly: (val: boolean | ((prev: boolean) => boolean)) => void;
+  addStudent: (student: Omit<Student, 'id'> | Student) => void;
+  updateStudent: (id: string, updates: Partial<Student>) => void;
+  deleteStudent: (id: string) => void;
 
-  // Marks & Grading
+  // Marks & Grading CRUD
   selectedExam: 'UT-1' | 'UT-2' | 'Mid-Term' | 'Final';
   setSelectedExam: (exam: 'UT-1' | 'UT-2' | 'Mid-Term' | 'Final') => void;
   updateStudentMark: (studentId: string, subject: 'math' | 'sci' | 'eng', score: number) => void;
   saveAllMarks: () => void;
 
-  // Teachers
+  // Teachers & Faculty CRUD
   teachers: Teacher[];
   updateTeacherStatus: (id: string, status: Teacher['status']) => void;
+  addTeacher: (teacher: Omit<Teacher, 'id'> | Teacher) => void;
+  updateTeacher: (id: string, updates: Partial<Teacher>) => void;
+  deleteTeacher: (id: string) => void;
 
-  // Syllabus
+  // Syllabus & Curriculum CRUD
   syllabus: SubjectSyllabus;
   updateChapter: (chapterId: string, updates: Partial<SubjectSyllabus['chapters'][0]>, notify?: boolean) => void;
   addChapter: (chapter: Omit<SubjectSyllabus['chapters'][0], 'id'>) => void;
+  deleteChapter: (chapterId: string) => void;
   sendTeacherReminder: (teacherName: string, subject: string, classSec: string) => void;
 
   // Sheets Sync & Webhook
@@ -77,6 +90,14 @@ interface AppContextType {
   setEditingChapterModalData: (chap: SubjectSyllabus['chapters'][0] | null) => void;
   isApkModalOpen: boolean;
   setIsApkModalOpen: (open: boolean) => void;
+
+  // Push Button Document & WhatsApp / Email Dispatch Modal
+  dispatchModalConfig: DispatchModalConfig;
+  openDispatchModal: (config: Partial<DispatchModalConfig>) => void;
+  closeDispatchModal: () => void;
+
+  // Real-Time Reactive Analytics Helper
+  metricsKey: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -88,22 +109,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [academicSession, setAcademicSession] = useState('2024 - 2025 (Term 2)');
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
-  // Students & Attendance
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [selectedClass, setSelectedClass] = useState<'Class 10-A' | 'Class 10-B' | 'Class 9-A'>('Class 10-A');
+  // Institution Profile (Stored in localStorage for persistence)
+  const [institution, setInstitution] = useState<InstitutionProfile>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_institution');
+      return saved ? JSON.parse(saved) : DEFAULT_INSTITUTION;
+    } catch {
+      return DEFAULT_INSTITUTION;
+    }
+  });
+
+  // Students Database (Stored in localStorage for persistence)
+  const [students, setStudents] = useState<Student[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_students');
+      return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    } catch {
+      return INITIAL_STUDENTS;
+    }
+  });
+
+  const [selectedClass, setSelectedClass] = useState<string>('Class 10-A');
   const [currentDateLabel, setCurrentDateLabel] = useState('Today: Oct 24, 2024');
   const [filterDefaultersOnly, setFilterDefaultersOnly] = useState(false);
 
   // Marks & Grading
   const [selectedExam, setSelectedExam] = useState<'UT-1' | 'UT-2' | 'Mid-Term' | 'Final'>('UT-2');
 
-  // Teachers
-  const [teachers, setTeachers] = useState<Teacher[]>(INITIAL_TEACHERS);
+  // Teachers Database (Stored in localStorage)
+  const [teachers, setTeachers] = useState<Teacher[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_teachers');
+      return saved ? JSON.parse(saved) : INITIAL_TEACHERS;
+    } catch {
+      return INITIAL_TEACHERS;
+    }
+  });
 
-  // Syllabus
-  const [syllabus, setSyllabus] = useState<SubjectSyllabus>(INITIAL_SYLLABUS);
+  // Syllabus (Stored in localStorage)
+  const [syllabus, setSyllabus] = useState<SubjectSyllabus>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_syllabus');
+      return saved ? JSON.parse(saved) : INITIAL_SYLLABUS;
+    } catch {
+      return INITIAL_SYLLABUS;
+    }
+  });
 
-  // Sheets Sync
+  // Metrics trigger timestamp for instant chart re-renders
+  const [metricsKey, setMetricsKey] = useState(Date.now());
+
+  // Google Sheets & Webhooks
   const [isMasterSheetConnected, setIsMasterSheetConnected] = useState(true);
   const [isTwoWaySyncActive, setIsTwoWaySyncActive] = useState(true);
   const [lastSyncTime, setLastSyncTime] = useState('Today at 09:42 AM');
@@ -118,9 +174,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toast, setToast] = useState<ToastInfo | null>(null);
 
   // Modals
-  const [activeStudentForReport, setActiveStudentForReport] = useState<Student | null>(INITIAL_STUDENTS[0]);
+  const [activeStudentForReport, setActiveStudentForReport] = useState<Student | null>(null);
   const [scheduleSyncModalData, setScheduleSyncModalData] = useState<{ teacherName: string; subject: string; classSec: string } | null>(null);
   const [editingChapterModalData, setEditingChapterModalData] = useState<SubjectSyllabus['chapters'][0] | null>(null);
+
+  // Push Button Document / WhatsApp / Email Dispatch Modal
+  const [dispatchModalConfig, setDispatchModalConfig] = useState<DispatchModalConfig>({
+    isOpen: false,
+    title: 'Push Report & Dispatch',
+    defaultFormat: 'pdf',
+    defaultRecipientType: 'principal',
+    reportCategory: 'master-audit',
+  });
+
+  // Save to localStorage automatically on changes
+  useEffect(() => {
+    localStorage.setItem('edutrack_institution', JSON.stringify(institution));
+  }, [institution]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_students', JSON.stringify(students));
+    setMetricsKey(Date.now());
+  }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_teachers', JSON.stringify(teachers));
+    setMetricsKey(Date.now());
+  }, [teachers]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_syllabus', JSON.stringify(syllabus));
+    setMetricsKey(Date.now());
+  }, [syllabus]);
 
   const showToast = (message: string, type: ToastInfo['type'] = 'success') => {
     const id = Date.now().toString();
@@ -135,6 +220,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const openDispatchModal = (config: Partial<DispatchModalConfig>) => {
+    setDispatchModalConfig({
+      isOpen: true,
+      title: config.title || 'Push & Dispatch Report',
+      defaultFormat: config.defaultFormat || 'pdf',
+      defaultRecipientType: config.defaultRecipientType || 'principal',
+      targetStudent: config.targetStudent,
+      targetClass: config.targetClass || selectedClass,
+      reportCategory: config.reportCategory || 'master-audit',
+    });
+  };
+
+  const closeDispatchModal = () => {
+    setDispatchModalConfig(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const updateInstitution = (profile: Partial<InstitutionProfile>) => {
+    setInstitution(prev => ({ ...prev, ...profile }));
+  };
+
+  const applyClientPreset = (presetId: string) => {
+    const preset = CLIENT_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setInstitution(preset);
+      setAcademicSession(preset.academicSession);
+    }
+  };
 
   const shiftDate = (dir: number) => {
     if (dir === -1) {
@@ -173,7 +286,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStudents(prev =>
       prev.map(s => {
         const gradeKey = selectedClass.replace('Class ', '');
-        if (s.gradeLevel === gradeKey) {
+        if (s.gradeLevel === gradeKey || selectedClass === 'ALL') {
           return {
             ...s,
             todayStatus: 'P',
@@ -185,6 +298,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     showToast(`Marked all ${selectedClass} students as Present`);
+  };
+
+  const addStudent = (studentData: Omit<Student, 'id'> | Student) => {
+    const newStudent: Student = {
+      id: `std-${Date.now()}`,
+      ...studentData,
+    } as Student;
+    setStudents(prev => [newStudent, ...prev]);
+  };
+
+  const updateStudent = (id: string, updates: Partial<Student>) => {
+    setStudents(prev =>
+      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
+    );
+  };
+
+  const deleteStudent = (id: string) => {
+    setStudents(prev => prev.filter(s => s.id !== id));
   };
 
   const updateStudentMark = (studentId: string, subject: 'math' | 'sci' | 'eng', score: number) => {
@@ -209,7 +340,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const saveAllMarks = () => {
-    showToast('All UT-2 marks updated & synced with master spreadsheet!');
+    showToast('All UT-2 marks updated, recalculated & saved in database!');
+  };
+
+  const addTeacher = (teacherData: Omit<Teacher, 'id'> | Teacher) => {
+    const newTeacher: Teacher = {
+      id: `tch-${Date.now()}`,
+      ...teacherData,
+    } as Teacher;
+    setTeachers(prev => [newTeacher, ...prev]);
+  };
+
+  const updateTeacher = (id: string, updates: Partial<Teacher>) => {
+    setTeachers(prev =>
+      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
+    );
+  };
+
+  const deleteTeacher = (id: string) => {
+    setTeachers(prev => prev.filter(t => t.id !== id));
   };
 
   const updateTeacherStatus = (id: string, status: Teacher['status']) => {
@@ -234,7 +383,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (notify) {
-      showToast('Progress saved & broadcast notification sent to parents & students!');
+      showToast('Progress saved & notification dispatched to parents & students!');
     } else {
       showToast('Chapter details updated successfully');
     }
@@ -257,6 +406,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`New unit "${chapterData.name}" added to curriculum.`);
   };
 
+  const deleteChapter = (chapterId: string) => {
+    setSyllabus(prev => {
+      const newChapters = prev.chapters.filter(c => c.id !== chapterId);
+      const completedCount = newChapters.filter(c => c.status === 'Completed').length;
+      const completionPct = newChapters.length > 0 ? parseFloat(((completedCount / newChapters.length) * 100).toFixed(1)) : 0;
+      return {
+        ...prev,
+        totalChapters: newChapters.length,
+        chapters: newChapters,
+        completedChapters: completedCount,
+        overallCompletion: completionPct,
+      };
+    });
+    showToast('Chapter removed from syllabus');
+  };
+
   const sendTeacherReminder = (teacherName: string, subject: string, classSec: string) => {
     showToast(`Urgent reminder successfully dispatched to ${teacherName} (${classSec} ${subject})`);
   };
@@ -268,7 +433,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setLastSyncTime(`Today at ${timeStr}`);
-    showToast('All 4 Master Google Sheets successfully synced!');
+    showToast('All Master Google Sheets successfully synced!');
   };
 
   const importRecords = async () => {
@@ -281,14 +446,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setIsImporting(false);
-    showToast('40 Student records successfully validated and imported!');
+    showToast(`${students.length} Student records successfully validated and imported!`);
   };
 
   const exportAllTabs = async () => {
     setIsExporting(true);
     await new Promise(r => setTimeout(r, 1400));
     setIsExporting(false);
-    showToast('Students, Attendance, Marks & Syllabus exported to Google Drive!');
+    showToast('Students, Attendance, Marks & Syllabus exported to Google Drive & Sheets!');
   };
 
   const fireMockWebhook = () => {
@@ -316,6 +481,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         academicSession,
         setAcademicSession,
+        institution,
+        updateInstitution,
+        applyClientPreset,
         students,
         selectedClass,
         setSelectedClass,
@@ -325,15 +493,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markAllPresent,
         filterDefaultersOnly,
         setFilterDefaultersOnly,
+        addStudent,
+        updateStudent,
+        deleteStudent,
         selectedExam,
         setSelectedExam,
         updateStudentMark,
         saveAllMarks,
         teachers,
         updateTeacherStatus,
+        addTeacher,
+        updateTeacher,
+        deleteTeacher,
         syllabus,
         updateChapter,
         addChapter,
+        deleteChapter,
         sendTeacherReminder,
         isMasterSheetConnected,
         setIsMasterSheetConnected,
@@ -353,7 +528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fireMockWebhook,
         toast,
         showToast,
-        activeStudentForReport,
+        activeStudentForReport: activeStudentForReport || students[0] || null,
         setActiveStudentForReport,
         scheduleSyncModalData,
         setScheduleSyncModalData,
@@ -361,6 +536,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setEditingChapterModalData,
         isApkModalOpen,
         setIsApkModalOpen,
+        dispatchModalConfig,
+        openDispatchModal,
+        closeDispatchModal,
+        metricsKey,
       }}
     >
       {children}

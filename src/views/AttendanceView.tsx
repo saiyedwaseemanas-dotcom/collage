@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AttendanceStatus, Student } from '../types';
 import { StudentDetailModal } from '../components/StudentDetailModal';
+import { StudentEditModal } from '../components/StudentEditModal';
 
 export const AttendanceView: React.FC = () => {
   const {
@@ -15,58 +16,71 @@ export const AttendanceView: React.FC = () => {
     markAllPresent,
     filterDefaultersOnly,
     setFilterDefaultersOnly,
-    lastSyncTime,
     showToast,
+    institution,
+    openDispatchModal,
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState<'student' | 'faculty'>('student');
   const [inspectStudent, setInspectStudent] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isNewStudent, setIsNewStudent] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
 
   // Filter students by selected class
-  const classGradeKey = selectedClass.replace('Class ', '') as '10-A' | '10-B' | '9-A';
-  const filteredByClass = students.filter(s => s.gradeLevel === classGradeKey);
+  const classGradeKey = selectedClass.replace('Class ', '');
+  const filteredByClass = selectedClass === 'ALL' 
+    ? students 
+    : students.filter(s => s.gradeLevel === classGradeKey);
+
   const displayStudents = filterDefaultersOnly
-    ? filteredByClass.filter(s => s.attendancePct < 75)
+    ? filteredByClass.filter(s => s.attendancePct < institution.defaulterThreshold)
     : filteredByClass;
 
-  // Realtime counts for current class
+  // Realtime counts
   const countP = filteredByClass.filter(s => s.todayStatus === 'P').length;
   const countA = filteredByClass.filter(s => s.todayStatus === 'A').length;
   const countL = filteredByClass.filter(s => s.todayStatus === 'L').length;
   const countHD = filteredByClass.filter(s => s.todayStatus === 'HD').length;
-  const defaulterCount = filteredByClass.filter(s => s.attendancePct < 75).length;
+  const defaulterCount = filteredByClass.filter(s => s.attendancePct < institution.defaulterThreshold).length;
 
   const handlePushSheet = async () => {
     setIsPushing(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 800));
     setIsPushing(false);
-    showToast(`Sync Successful! ${filteredByClass.length} Attendance rows written to Google Sheet`);
+    showToast(`Instant Saved & Synced! ${filteredByClass.length} Daily Attendance rows registered in Master Database`);
   };
 
-  const handleOpenWhatsApp = (phone: string, name: string, status: string) => {
-    const text = encodeURIComponent(
-      `EduTrack Pro Alert: Daily attendance update for ${name}. Status: ${status}. Date: ${currentDateLabel}. DPS Sector 4.`
-    );
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+  const handleOpenWhatsApp = (student: Student) => {
+    openDispatchModal({
+      title: `Daily Attendance Update: ${student.name}`,
+      reportCategory: 'attendance-register',
+      defaultFormat: 'pdf',
+      defaultRecipientType: 'parent',
+      targetStudent: student,
+    });
   };
 
-  const handleDefaulterAlert = (phone: string, name: string, pct: number) => {
-    const text = encodeURIComponent(
-      `URGENT ATTENDANCE WARNING from DPS Sector 4: ${name} has an aggregate attendance of ${pct}%, which is below the mandatory 75% CBSE requirement. Please contact the class teacher immediately.`
-    );
-    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+  const handleDefaulterAlert = (student: Student) => {
+    openDispatchModal({
+      title: `Urgent Defaulter Warning: ${student.name}`,
+      reportCategory: 'attendance-register',
+      defaultFormat: 'pdf',
+      defaultRecipientType: 'parent',
+      targetStudent: student,
+    });
   };
 
   return (
-    <div className="flex flex-col w-full text-left max-w-7xl mx-auto">
+    <div className="flex flex-col w-full text-left max-w-7xl mx-auto px-2 sm:px-4">
       {/* Top Controls Banner */}
-      <div className="px-4 py-3 bg-[#f2f3ff] flex flex-col gap-3 border-b border-[#dae2fd]/60">
+      <div className="py-2.5 sm:py-3 flex flex-col gap-2.5">
         {/* View Switcher Segmented Control */}
         <div className="p-1 bg-[#eaedff] rounded-2xl flex items-center justify-between shadow-inner">
           <button
             onClick={() => setActiveSubTab('student')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
               activeSubTab === 'student'
                 ? 'bg-white text-[#004ac6] shadow-sm'
                 : 'text-[#434655] hover:text-[#131b2e]'
@@ -74,11 +88,11 @@ export const AttendanceView: React.FC = () => {
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">school</span>
-            <span>Student Roster</span>
+            <span className="truncate">Student Register</span>
           </button>
           <button
             onClick={() => setActiveSubTab('faculty')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5 ${
               activeSubTab === 'faculty'
                 ? 'bg-white text-[#004ac6] shadow-sm'
                 : 'text-[#434655] hover:text-[#131b2e]'
@@ -86,53 +100,89 @@ export const AttendanceView: React.FC = () => {
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">badge</span>
-            <span>Faculty Log</span>
+            <span className="truncate">Faculty Biometric</span>
           </button>
         </div>
 
-        {/* Date Strip & Shift Navigator */}
-        <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-[#eaedff]">
-          <button
-            onClick={() => shiftDate(-1)}
-            className="w-8 h-8 rounded-lg bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors"
-            type="button"
-            title="Previous Day"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#004ac6] text-[20px]">calendar_today</span>
-            <span className="font-bold text-xs sm:text-sm text-[#131b2e]">{currentDateLabel}</span>
-            <span className="w-2 h-2 rounded-full bg-[#007d55] animate-pulse"></span>
+        {/* Date Strip & Shift Navigator + Push Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-white p-3 rounded-2xl shadow-sm border border-[#eaedff] gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={() => shiftDate(-1)}
+              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0"
+              type="button"
+              title="Previous Day"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="material-symbols-outlined text-[#004ac6] text-[18px] shrink-0">calendar_today</span>
+              <span className="font-bold text-xs sm:text-sm text-[#131b2e] truncate">{currentDateLabel}</span>
+              <span className="w-2 h-2 rounded-full bg-[#007d55] animate-pulse shrink-0"></span>
+            </div>
+            <button
+              onClick={() => shiftDate(1)}
+              className="w-9 h-9 rounded-xl bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors shrink-0"
+              type="button"
+              title="Next Day"
+            >
+              <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
           </div>
-          <button
-            onClick={() => shiftDate(1)}
-            className="w-8 h-8 rounded-lg bg-[#f2f3ff] flex items-center justify-center text-[#737686] hover:text-[#004ac6] transition-colors"
-            type="button"
-            title="Next Day"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
+
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+            <button
+              onClick={() =>
+                openDispatchModal({
+                  title: `Attendance Register: ${selectedClass}`,
+                  reportCategory: 'attendance-register',
+                  defaultFormat: 'pdf',
+                  defaultRecipientType: 'principal',
+                  targetClass: selectedClass,
+                })
+              }
+              className="h-10 sm:h-9 px-3 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[16px]">send</span>
+              <span className="truncate">Push Report</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setEditingStudent(null);
+                setIsNewStudent(true);
+                setIsEditModalOpen(true);
+              }}
+              className="h-10 sm:h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="truncate">Add Student</span>
+            </button>
+          </div>
         </div>
 
-        {/* Class Selector Filter Pills (when student tab active) */}
+        {/* Class Selector Filter Pills */}
         {activeSubTab === 'student' && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {(['Class 10-A', 'Class 10-B', 'Class 9-A'] as const).map(cls => {
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-2 px-2">
+            {(['ALL', 'Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 11-Sci', 'Class 12-Sci'] as const).map(cls => {
               const isSelected = selectedClass === cls;
-              const count = students.filter(s => s.gradeLevel === cls.replace('Class ', '')).length;
+              const count = cls === 'ALL'
+                ? students.length
+                : students.filter(s => s.gradeLevel === cls.replace('Class ', '')).length;
               return (
                 <button
                   key={cls}
                   onClick={() => setSelectedClass(cls)}
-                  className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
                     isSelected
                       ? 'bg-[#004ac6] text-white shadow-sm'
                       : 'text-[#434655] bg-white border border-[#dae2fd] hover:bg-[#eaedff]'
                   }`}
                   type="button"
                 >
-                  <span>{cls}</span>
+                  <span>{cls === 'ALL' ? 'All Classes' : cls}</span>
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] ${
                       isSelected ? 'bg-[#dbe1ff] text-[#00174b]' : 'bg-[#f2f3ff] text-[#737686]'
@@ -148,70 +198,86 @@ export const AttendanceView: React.FC = () => {
       </div>
 
       {activeSubTab === 'student' ? (
-        <div className="flex flex-col w-full pb-28">
-          {/* Realtime Metric Ticker */}
-          <div className="px-4 pt-3 pb-2 grid grid-cols-4 gap-2">
-            <div className="bg-white p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-sm border border-[#eaedff]">
-              <span className="text-[11px] font-semibold text-[#737686]">Present</span>
-              <span className="text-lg font-bold text-[#007d55]">{countP}</span>
+        <div className="flex flex-col w-full pb-32">
+          {/* Realtime Metric Ticker (Updates in <1s) */}
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-2">
+            <div className="bg-white p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-xs border border-[#eaedff]">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#737686]">Present</span>
+              <span className="text-base sm:text-lg font-bold text-[#007d55]">{countP}</span>
             </div>
-            <div className="bg-white p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-sm border border-[#eaedff]">
-              <span className="text-[11px] font-semibold text-[#737686]">Absent</span>
-              <span className="text-lg font-bold text-[#ba1a1a]">{countA}</span>
+            <div className="bg-white p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-xs border border-[#eaedff]">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#737686]">Absent</span>
+              <span className="text-base sm:text-lg font-bold text-[#ba1a1a]">{countA}</span>
             </div>
-            <div className="bg-white p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-sm border border-[#eaedff]">
-              <span className="text-[11px] font-semibold text-[#737686]">Leave</span>
-              <span className="text-lg font-bold text-[#4648d4]">{countL}</span>
+            <div className="bg-white p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-xs border border-[#eaedff]">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#737686]">Leave</span>
+              <span className="text-base sm:text-lg font-bold text-[#4648d4]">{countL}</span>
             </div>
-            <div className="bg-white p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-sm border border-[#eaedff]">
-              <span className="text-[11px] font-semibold text-[#737686]">Half-Day</span>
-              <span className="text-lg font-bold text-[#004ac6]">{countHD}</span>
+            <div className="bg-white p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-center shadow-xs border border-[#eaedff]">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#737686]">Half-Day</span>
+              <span className="text-base sm:text-lg font-bold text-[#004ac6]">{countHD}</span>
             </div>
           </div>
 
           {/* Quick Action Ribbon */}
-          <div className="px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-            <button
-              onClick={markAllPresent}
-              className="whitespace-nowrap px-3.5 py-2 bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">done_all</span>
-              <span>Mark All Present</span>
-            </button>
-
-            <button
-              onClick={() => setFilterDefaultersOnly(prev => !prev)}
-              className={`whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all ${
-                filterDefaultersOnly
-                  ? 'bg-[#ba1a1a] text-white'
-                  : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffdad6]/80'
-              }`}
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[16px]">warning</span>
-              <span>Defaulters (&lt;75%)</span>
-              <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  filterDefaultersOnly ? 'bg-white text-[#ba1a1a]' : 'bg-[#ba1a1a] text-white'
-                }`}
-              >
-                {defaulterCount}
-              </span>
-            </button>
-
-            <div className="flex items-center gap-1.5 ml-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
-                onClick={() => showToast('Exported Attendance ledger to Excel (XLSX)')}
-                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center gap-1 hover:bg-[#f2f3ff]"
+                onClick={markAllPresent}
+                className="flex-1 sm:flex-initial h-10 px-3.5 bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[17px]">done_all</span>
+                <span>Mark All Present</span>
+              </button>
+
+              <button
+                onClick={() => setFilterDefaultersOnly(prev => !prev)}
+                className={`flex-1 sm:flex-initial h-10 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all ${
+                  filterDefaultersOnly
+                    ? 'bg-[#ba1a1a] text-white'
+                    : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffdad6]/80'
+                }`}
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[16px]">warning</span>
+                <span className="truncate">&lt;{institution.defaulterThreshold}%</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    filterDefaultersOnly ? 'bg-white text-[#ba1a1a]' : 'bg-[#ba1a1a] text-white'
+                  }`}
+                >
+                  {defaulterCount}
+                </span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 w-full sm:w-auto sm:ml-auto">
+              <button
+                onClick={() =>
+                  openDispatchModal({
+                    title: 'Attendance Register Spreadsheet',
+                    reportCategory: 'attendance-register',
+                    defaultFormat: 'excel',
+                    defaultRecipientType: 'principal',
+                  })
+                }
+                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff]"
                 type="button"
               >
                 <span className="material-symbols-outlined text-[16px] text-[#007d55]">table_view</span>
                 <span>Excel</span>
               </button>
               <button
-                onClick={() => showToast('Generated Attendance PDF report')}
-                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center gap-1 hover:bg-[#f2f3ff]"
+                onClick={() =>
+                  openDispatchModal({
+                    title: 'Official Attendance Register PDF',
+                    reportCategory: 'attendance-register',
+                    defaultFormat: 'pdf',
+                    defaultRecipientType: 'principal',
+                  })
+                }
+                className="h-9 px-2.5 bg-white border border-[#dae2fd] text-[#434655] rounded-xl text-xs font-semibold flex items-center justify-center gap-1 hover:bg-[#f2f3ff]"
                 type="button"
               >
                 <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">picture_as_pdf</span>
@@ -221,25 +287,25 @@ export const AttendanceView: React.FC = () => {
           </div>
 
           {/* Student Roster Cards */}
-          <div className="px-4 py-2 flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2.5">
             {displayStudents.map(student => {
-              const isDefaulter = student.attendancePct < 75;
+              const isDefaulter = student.attendancePct < institution.defaulterThreshold;
               return (
                 <div
                   key={student.id}
-                  className={`bg-white p-3.5 rounded-2xl shadow-sm border transition-all flex flex-col gap-3 ${
+                  className={`bg-white p-3 sm:p-3.5 rounded-3xl shadow-sm border transition-all flex flex-col gap-2.5 ${
                     isDefaulter
-                      ? 'border-[#ba1a1a]/40 bg-[#ffdad6]/10'
+                      ? 'border-[#ba1a1a]/40 bg-[#fffbfa]'
                       : 'border-[#eaedff]'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <div
-                      className="flex items-center gap-3 min-w-0 cursor-pointer"
+                      className="flex items-center gap-2.5 min-w-0 cursor-pointer"
                       onClick={() => setInspectStudent(student)}
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 ${
                           isDefaulter
                             ? 'bg-[#ffdad6] text-[#ba1a1a]'
                             : 'bg-[#dbe1ff] text-[#004ac6]'
@@ -248,59 +314,74 @@ export const AttendanceView: React.FC = () => {
                         {student.rollNo}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-[#131b2e] truncate">{student.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs sm:text-sm text-[#131b2e] truncate">{student.name}</span>
                           <span
-                            className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold ${
+                            className={`px-1.5 py-0.2 rounded-full font-mono text-[9px] sm:text-[10px] font-bold shrink-0 ${
                               isDefaulter ? 'bg-[#ba1a1a] text-white' : 'bg-[#f2f3ff] text-[#737686]'
                             }`}
                           >
                             {student.attendancePct}%
                           </span>
                         </div>
-                        <span className={`text-[11px] truncate ${isDefaulter ? 'text-[#ba1a1a] font-semibold' : 'text-[#737686]'}`}>
+                        <span className={`text-[10px] sm:text-[11px] truncate ${isDefaulter ? 'text-[#ba1a1a] font-semibold' : 'text-[#737686]'}`}>
                           {isDefaulter
-                            ? 'Critical Defaulter Warning'
-                            : `${student.classSec} • ${student.parentRelation}: ${student.parentName}`}
+                            ? 'Below Minimum Requirement'
+                            : `${student.classSec} • ${student.parentName}`}
                         </span>
                       </div>
                     </div>
 
-                    {isDefaulter ? (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isDefaulter ? (
+                        <button
+                          onClick={() => handleDefaulterAlert(student)}
+                          className="h-8 px-2.5 rounded-xl bg-[#ba1a1a] text-white flex items-center gap-1 text-[11px] sm:text-xs font-bold shadow-xs active:scale-95 transition-transform"
+                          type="button"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">send</span>
+                          <span>Alert</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleOpenWhatsApp(student)}
+                          className="h-8 px-2.5 rounded-xl bg-[#007d55] text-white flex items-center gap-1 text-[11px] sm:text-xs font-bold hover:bg-[#006644] transition-colors"
+                          type="button"
+                          title="WhatsApp Parent"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">chat</span>
+                          <span className="hidden xs:inline">WA</span>
+                        </button>
+                      )}
+
                       <button
-                        onClick={() => handleDefaulterAlert(student.parentWhatsApp, student.name, student.attendancePct)}
-                        className="px-3 py-1.5 rounded-full bg-[#ba1a1a] text-white flex items-center gap-1 text-xs font-bold shadow-sm active:scale-95 transition-transform"
-                        type="button"
+                        onClick={() => {
+                          setEditingStudent(student);
+                          setIsNewStudent(false);
+                          setIsEditModalOpen(true);
+                        }}
+                        className="w-8 h-8 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] flex items-center justify-center text-[#004ac6] border border-[#dae2fd] shrink-0"
+                        title="Edit Student"
                       >
-                        <span className="material-symbols-outlined text-[15px]">priority_high</span>
-                        <span>Alert Parent</span>
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => handleOpenWhatsApp(student.parentWhatsApp, student.name, student.todayStatus)}
-                        className="w-9 h-9 rounded-full bg-[#f2f3ff] flex items-center justify-center text-[#007d55] hover:bg-[#bdffdb] transition-colors"
-                        type="button"
-                        title="WhatsApp Parent"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">chat</span>
-                      </button>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Segmented Buttons (P / A / L / HD) */}
-                  <div className="grid grid-cols-4 bg-[#f2f3ff] p-1 rounded-xl gap-1 border border-[#dae2fd]/50">
+                  {/* Segmented Buttons (P / A / L / HD) - 44px min touch height on mobile */}
+                  <div className="grid grid-cols-4 bg-[#f2f3ff] p-1 rounded-2xl gap-1 border border-[#dae2fd]/50">
                     {(['P', 'A', 'L', 'HD'] as const).map(code => {
                       const isActive = student.todayStatus === code;
-                      let activeClass = 'bg-[#007d55] text-white font-bold shadow-sm';
-                      if (code === 'A') activeClass = 'bg-[#ba1a1a] text-white font-bold shadow-sm';
-                      if (code === 'L') activeClass = 'bg-[#4648d4] text-white font-bold shadow-sm';
-                      if (code === 'HD') activeClass = 'bg-[#004ac6] text-white font-bold shadow-sm';
+                      let activeClass = 'bg-[#007d55] text-white font-bold shadow-xs';
+                      if (code === 'A') activeClass = 'bg-[#ba1a1a] text-white font-bold shadow-xs';
+                      if (code === 'L') activeClass = 'bg-[#4648d4] text-white font-bold shadow-xs';
+                      if (code === 'HD') activeClass = 'bg-[#004ac6] text-white font-bold shadow-xs';
 
                       return (
                         <button
                           key={code}
                           onClick={() => updateStudentAttendance(student.id, code)}
-                          className={`py-1.5 rounded-lg text-xs font-semibold text-center transition-all ${
+                          className={`h-9 sm:h-8 rounded-xl text-xs font-semibold text-center transition-all flex items-center justify-center ${
                             isActive
                               ? activeClass
                               : 'text-[#434655] hover:bg-white/80'
@@ -318,48 +399,48 @@ export const AttendanceView: React.FC = () => {
           </div>
 
           {/* Sticky Bottom Save & Sync Dock */}
-          <div className="fixed bottom-16 left-0 right-0 z-30 px-4 py-2 bg-[#faf8ff]/90 backdrop-blur-md">
-            <div className="max-w-xl mx-auto bg-[#283044] text-[#eef0ff] p-3 rounded-2xl shadow-xl flex items-center justify-between gap-3 border border-white/10">
+          <div className="fixed bottom-16 left-0 right-0 z-30 px-3 sm:px-4 py-2 bg-[#faf8ff]/90 backdrop-blur-md">
+            <div className="max-w-xl mx-auto bg-[#1e293b] text-[#eef0ff] p-2.5 sm:p-3 rounded-2xl shadow-xl flex items-center justify-between gap-2 border border-white/10">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#6ffbbe] animate-pulse"></span>
-                  <span className="text-xs font-bold text-white truncate">Auto-saved 2 mins ago</span>
+                  <span className="w-2 h-2 rounded-full bg-[#6ffbbe] animate-pulse shrink-0"></span>
+                  <span className="text-xs font-bold text-white truncate">Auto-saved to Local Storage</span>
                 </div>
-                <span className="text-[10px] text-[#c3c6d7] truncate">Connected: DPS_Attendance_Sync_2024</span>
+                <span className="text-[10px] text-[#c3c6d7] truncate">{institution.shortName} Database</span>
               </div>
               <button
                 onClick={handlePushSheet}
                 disabled={isPushing}
-                className="px-3.5 py-2 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
+                className="h-9 px-3.5 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
                 type="button"
               >
-                <span className={`material-symbols-outlined text-[18px] ${isPushing ? 'animate-spin' : ''}`}>
+                <span className={`material-symbols-outlined text-[16px] ${isPushing ? 'animate-spin' : ''}`}>
                   sync
                 </span>
-                <span>{isPushing ? 'Pushing...' : 'Push Sheet'}</span>
+                <span>{isPushing ? 'Saving...' : 'Save & Sync'}</span>
               </button>
             </div>
           </div>
         </div>
       ) : (
         /* Faculty Log View */
-        <div className="px-4 py-3 flex flex-col gap-3 pb-24">
+        <div className="flex flex-col gap-2.5 pb-28">
           {teachers.map(tch => (
-            <div key={tch.id} className="bg-white p-4 rounded-2xl shadow-sm border border-[#eaedff] space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            <div key={tch.id} className="bg-white p-3.5 rounded-3xl shadow-sm border border-[#eaedff] space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <img
                     src={tch.avatarUrl}
                     alt={tch.name}
-                    className="w-11 h-11 rounded-full object-cover ring-2 ring-[#004ac6]/20"
+                    className="w-10 h-10 rounded-2xl object-cover ring-2 ring-[#004ac6]/20 shrink-0"
                   />
-                  <div>
-                    <h4 className="font-bold text-sm text-[#131b2e]">{tch.name}</h4>
-                    <span className="text-xs text-[#737686]">{tch.designation}</span>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-xs sm:text-sm text-[#131b2e] truncate">{tch.name}</h4>
+                    <span className="text-[11px] text-[#737686] truncate block">{tch.designation}</span>
                   </div>
                 </div>
                 <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
+                  className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1 shrink-0 ${
                     tch.status === 'In Campus'
                       ? 'bg-[#bdffdb] text-[#002113]'
                       : tch.status === 'On Duty (Exam)'
@@ -368,37 +449,37 @@ export const AttendanceView: React.FC = () => {
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                  {tch.status}
+                  <span className="truncate">{tch.status}</span>
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 bg-[#f2f3ff] p-2.5 rounded-xl text-xs text-[#131b2e]">
+              <div className="grid grid-cols-2 gap-2 bg-[#f2f3ff] p-2 rounded-2xl text-xs text-[#131b2e]">
                 <div>
-                  <span className="text-[10px] text-[#737686] block">Biometric Check-In</span>
-                  <span className="font-bold font-mono flex items-center gap-1 text-[#007d55]">
-                    <span className="material-symbols-outlined text-[15px]">login</span>
+                  <span className="text-[9px] sm:text-[10px] text-[#737686] block">Biometric In</span>
+                  <span className="font-bold font-mono flex items-center gap-1 text-[#007d55] text-xs">
+                    <span className="material-symbols-outlined text-[14px]">login</span>
                     {tch.biometricCheckIn}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#737686] block">Scheduled Out</span>
-                  <span className="font-bold font-mono flex items-center gap-1 text-[#737686]">
-                    <span className="material-symbols-outlined text-[15px]">logout</span>
+                  <span className="text-[9px] sm:text-[10px] text-[#737686] block">Scheduled Out</span>
+                  <span className="font-bold font-mono flex items-center gap-1 text-[#737686] text-xs">
+                    <span className="material-symbols-outlined text-[14px]">logout</span>
                     {tch.scheduledOut}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-1 text-xs">
+              <div className="flex items-center justify-between text-[11px]">
                 <span className="text-[#737686] font-medium">Leave Balances:</span>
-                <div className="flex items-center gap-2">
-                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[11px] font-semibold text-[#131b2e]">
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[10px] font-semibold text-[#131b2e]">
                     CL: {tch.leaveBalance.cl}
                   </span>
-                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[11px] font-semibold text-[#131b2e]">
+                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[10px] font-semibold text-[#131b2e]">
                     SL: {tch.leaveBalance.sl}
                   </span>
-                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[11px] font-semibold text-[#131b2e]">
+                  <span className="bg-[#f2f3ff] px-2 py-0.5 rounded text-[10px] font-semibold text-[#131b2e]">
                     EL: {tch.leaveBalance.el}
                   </span>
                 </div>
@@ -410,6 +491,14 @@ export const AttendanceView: React.FC = () => {
 
       {/* Inspector Modal */}
       <StudentDetailModal student={inspectStudent} onClose={() => setInspectStudent(null)} />
+
+      {/* Student Edit Modal */}
+      <StudentEditModal
+        student={editingStudent}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        isNew={isNewStudent}
+      />
     </div>
   );
 };

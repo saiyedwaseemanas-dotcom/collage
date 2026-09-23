@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type AttendanceStatus = 'P' | 'A' | 'L' | 'HD';
 
 export interface Student {
@@ -5,17 +7,21 @@ export interface Student {
   rollNo: string;
   name: string;
   classSec: string;
-  gradeLevel: '10-A' | '10-B' | '9-A';
+  gradeLevel: '10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci' | string;
   parentName: string;
   parentRelation: 'Father' | 'Mother' | 'Guardian';
   parentPhone: string;
   parentWhatsApp: string;
+  parentEmail?: string;
   attendancePct: number;
   totalPresent: number;
   totalWorkingDays: number;
   todayStatus: AttendanceStatus;
   note?: string;
   avatarUrl: string;
+  dob?: string;
+  bloodGroup?: string;
+  address?: string;
   marks: {
     ut1: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
     ut2: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
@@ -60,7 +66,7 @@ export interface CurriculumChapter {
 
 export interface SubjectSyllabus {
   subject: string;
-  gradeLevel: '10-A' | '10-B' | '9-A';
+  gradeLevel: '10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci' | string;
   teacherName: string;
   teacherQualification: string;
   overallCompletion: number;
@@ -83,4 +89,57 @@ export interface WebhookLog {
   payloadSummary: string;
 }
 
-export type ActiveTab = 'dashboard' | 'attendance' | 'syllabus' | 'exams' | 'sync' | 'students' | 'teachers' | 'settings';
+export interface InstitutionProfile {
+  id: string;
+  name: string;
+  shortName: string;
+  category: 'School' | 'College' | 'University' | 'Academy';
+  tagline: string;
+  affiliationCode: string;
+  boardName: string; // e.g. "CBSE", "ICSE", "State Board", "NAAC / UGC Autonomous"
+  logoUrl: string;
+  stampUrl?: string;
+  principalName: string;
+  principalDesignation: 'Principal' | 'Dean' | 'Director' | 'Headmaster' | 'President';
+  principalEmail: string;
+  principalWhatsApp: string;
+  phone: string;
+  email: string;
+  address: string;
+  website: string;
+  academicSession: string;
+  primaryColor: string;
+  accentColor: string;
+  defaulterThreshold: number;
+  currencySymbol: string;
+  whatsappTemplate?: string;
+}
+
+export interface DispatchModalConfig {
+  isOpen: boolean;
+  title: string;
+  defaultFormat: 'pdf' | 'excel' | 'sheets';
+  defaultRecipientType: 'principal' | 'parent' | 'all-parents';
+  targetStudent?: Student;
+  targetClass?: string;
+  reportCategory:
+    | 'student-report'
+    | 'attendance-register'
+    | 'marks-ledger'
+    | 'marks-summary'
+    | 'faculty-summary'
+    | 'syllabus-progress'
+    | 'syllabus-audit'
+    | 'master-audit';
+}
+
+export type ActiveTab = 
+  | 'dashboard' 
+  | 'attendance' 
+  | 'syllabus' 
+  | 'exams' 
+  | 'sync' 
+  | 'students' 
+  | 'teachers' 
+  | 'branding'
+  | 'settings';

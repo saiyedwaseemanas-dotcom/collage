@@ -7,6 +7,7 @@ import { Toast } from './components/Toast';
 import { ScheduleSyncModal } from './components/ScheduleSyncModal';
 import { ApkBuildModal } from './components/ApkBuildModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ExportDispatchModal } from './components/ExportDispatchModal';
 
 import { DashboardView } from './views/DashboardView';
 import { AttendanceView } from './views/AttendanceView';
@@ -16,6 +17,7 @@ import { SheetsSyncView } from './views/SheetsSyncView';
 import { StudentsDirectoryView } from './views/StudentsDirectoryView';
 import { TeachersRegisterView } from './views/TeachersRegisterView';
 import { SettingsView } from './views/SettingsView';
+import { InstitutionCustomizerView } from './views/InstitutionCustomizerView';
 
 const MainContent: React.FC = () => {
   const { activeTab, isApkModalOpen, setIsApkModalOpen } = useApp();
@@ -37,6 +39,7 @@ const MainContent: React.FC = () => {
         {activeTab === 'sync' && <SheetsSyncView />}
         {activeTab === 'students' && <StudentsDirectoryView />}
         {activeTab === 'teachers' && <TeachersRegisterView />}
+        {activeTab === 'branding' && <InstitutionCustomizerView />}
         {activeTab === 'settings' && <SettingsView />}
       </main>
 
@@ -49,6 +52,7 @@ const MainContent: React.FC = () => {
       {/* Global Modals */}
       <ScheduleSyncModal />
       <ApkBuildModal isOpen={isApkModalOpen} onClose={() => setIsApkModalOpen(false)} />
+      <ExportDispatchModal />
 
       {/* Offline Status */}
       <OfflineIndicator />

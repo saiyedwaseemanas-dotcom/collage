@@ -6,12 +6,15 @@ export const SyllabusView: React.FC = () => {
   const {
     syllabus,
     updateChapter,
+    deleteChapter,
     sendTeacherReminder,
     setEditingChapterModalData,
     showToast,
+    institution,
+    openDispatchModal,
   } = useApp();
 
-  const [selectedClassTab, setSelectedClassTab] = useState<'10-A' | '10-B' | '9-A'>('10-A');
+  const [selectedClassTab, setSelectedClassTab] = useState<'10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci'>('10-A');
   const [selectedSubject, setSelectedSubject] = useState('Mathematics');
   const [expandedChapterIds, setExpandedChapterIds] = useState<string[]>(['chap-5']);
 
@@ -21,58 +24,51 @@ export const SyllabusView: React.FC = () => {
     );
   };
 
-  const handleExport = (type: 'PDF' | 'Sheets') => {
-    showToast(`Generating ${type} Curriculum Progress Report...`);
-  };
-
-  const subjects = ['Mathematics', 'Science', 'English', 'Social Science', 'Hindi'];
+  const subjects = ['Mathematics', 'Science', 'English', 'Social Science', 'Computer Science', 'Hindi'];
 
   return (
     <div className="flex flex-col w-full px-4 py-3 space-y-4 max-w-7xl mx-auto text-left pb-24">
       {/* Breadcrumb & Title Section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-col">
           <div className="flex items-center gap-1 text-[#737686] text-[11px] font-bold uppercase tracking-wider">
-            <span>Academic Monitoring</span>
+            <span>{institution.shortName} Academic Monitoring</span>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             <span className="text-[#004ac6]">Syllabus Tracker</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#131b2e]">Curriculum Progress</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#131b2e]">Curriculum & Syllabus Delivery</h1>
         </div>
 
-        {/* Action Pills */}
+        {/* Action Buttons: Push Report */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleExport('PDF')}
-            className="flex items-center gap-1 h-9 px-3 bg-white border border-[#dae2fd] rounded-full text-[#131b2e] hover:bg-[#eaedff] transition-all shadow-sm active:scale-95"
+            onClick={() =>
+              openDispatchModal({
+                title: `Curriculum Audit: ${selectedSubject} (${selectedClassTab})`,
+                reportCategory: 'syllabus-audit',
+                defaultFormat: 'pdf',
+                defaultRecipientType: 'principal',
+              })
+            }
+            className="flex items-center gap-1.5 h-10 px-4 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-2xl text-xs font-bold shadow-md active:scale-95 transition-all"
             type="button"
-            title="Export as PDF"
           >
-            <span className="material-symbols-outlined text-[18px] text-[#ba1a1a]">picture_as_pdf</span>
-            <span className="text-xs font-bold hidden sm:inline">PDF</span>
-          </button>
-          <button
-            onClick={() => handleExport('Sheets')}
-            className="flex items-center gap-1 h-9 px-3 bg-white border border-[#dae2fd] rounded-full text-[#131b2e] hover:bg-[#eaedff] transition-all shadow-sm active:scale-95"
-            type="button"
-            title="Sync to Google Sheets"
-          >
-            <span className="material-symbols-outlined text-[18px] text-[#007d55]">table_chart</span>
-            <span className="text-xs font-bold hidden sm:inline">Sync</span>
+            <span className="material-symbols-outlined text-[18px]">send</span>
+            <span>Push Audit to Principal</span>
           </button>
         </div>
       </div>
 
       {/* Class Selector Tabs */}
       <div className="flex p-1 bg-[#eaedff] rounded-2xl gap-1 overflow-x-auto no-scrollbar shadow-inner">
-        {(['10-A', '10-B', '9-A'] as const).map(cls => (
+        {(['10-A', '10-B', '9-A', '11-Sci', '12-Sci'] as const).map(cls => (
           <button
             key={cls}
             onClick={() => {
               setSelectedClassTab(cls);
               showToast(`Loaded curriculum for Class ${cls}`);
             }}
-            className={`flex-1 py-2 px-3 text-center rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 py-2 px-3 text-center rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               selectedClassTab === cls
                 ? 'bg-white text-[#004ac6] shadow-sm'
                 : 'text-[#434655] hover:text-[#131b2e]'
@@ -95,7 +91,7 @@ export const SyllabusView: React.FC = () => {
                 setSelectedSubject(subj);
                 showToast(`Viewing ${subj} curriculum`);
               }}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 isSelected
                   ? 'bg-[#004ac6] text-white shadow-sm'
                   : 'bg-white text-[#131b2e] border border-[#dae2fd] hover:bg-[#eaedff]'
@@ -109,11 +105,11 @@ export const SyllabusView: React.FC = () => {
       </div>
 
       {/* Overall Subject Progress Card */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#eaedff] space-y-3">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-[#eaedff] space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-2xl bg-[#dbe1ff] flex items-center justify-center text-[#00174b] shrink-0">
-              <span className="material-symbols-outlined text-[28px]">functions</span>
+              <span className="material-symbols-outlined text-[28px]">auto_stories</span>
             </div>
             <div className="min-w-0 flex flex-col">
               <h2 className="text-sm sm:text-base font-bold text-[#131b2e] truncate">
@@ -134,13 +130,13 @@ export const SyllabusView: React.FC = () => {
         </div>
 
         {/* Progress Breakdown */}
-        <div className="space-y-1.5 bg-[#f2f3ff] p-3 rounded-xl border border-[#dae2fd]/50">
+        <div className="space-y-1.5 bg-[#f2f3ff] p-3 rounded-2xl border border-[#dae2fd]/50">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#737686]">Syllabus Completion</span>
             <div className="flex items-baseline gap-1">
               <span className="text-sm sm:text-base font-bold text-[#004ac6]">{syllabus.overallCompletion}%</span>
               <span className="text-[11px] text-[#737686]">
-                ({syllabus.completedChapters} / {syllabus.chapters.length} Chapters)
+                ({syllabus.completedChapters} / {syllabus.chapters.length} Units)
               </span>
             </div>
           </div>
@@ -151,7 +147,6 @@ export const SyllabusView: React.FC = () => {
               className="h-full bg-[#004ac6] rounded-full transition-all duration-500"
               style={{ width: `${syllabus.overallCompletion}%` }}
             />
-            {/* Target Marker */}
             <div
               className="absolute top-0 bottom-0 w-0.5 bg-[#131b2e]/60"
               style={{ left: `${syllabus.targetMidTerm}%` }}
@@ -169,8 +164,8 @@ export const SyllabusView: React.FC = () => {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="bg-[#f2f3ff] p-3 rounded-xl flex items-center gap-3 border border-[#dae2fd]/50">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#004ac6] shrink-0 shadow-sm">
+          <div className="bg-[#f2f3ff] p-3 rounded-2xl flex items-center gap-3 border border-[#dae2fd]/50">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#004ac6] shrink-0 shadow-xs">
               <span className="material-symbols-outlined text-[20px]">calendar_month</span>
             </div>
             <div className="flex flex-col">
@@ -181,53 +176,18 @@ export const SyllabusView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#f2f3ff] p-3 rounded-xl flex items-center gap-3 border border-[#dae2fd]/50">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#007d55] shrink-0 shadow-sm">
+          <div className="bg-[#f2f3ff] p-3 rounded-2xl flex items-center gap-3 border border-[#dae2fd]/50">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#007d55] shrink-0 shadow-xs">
               <span className="material-symbols-outlined text-[20px]">check_circle</span>
             </div>
             <div className="flex flex-col">
               <span className="text-[11px] text-[#737686]">Remaining</span>
               <span className="text-sm font-bold text-[#131b2e] font-mono">
                 {syllabus.chapters.length - syllabus.completedChapters}{' '}
-                <span className="text-xs text-[#737686] font-normal">Chapters</span>
+                <span className="text-xs text-[#737686] font-normal">Units</span>
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Admin Red Alert Box */}
-      <div className="bg-[#ffdad6] text-[#93000a] p-4 rounded-2xl shadow-sm flex flex-col gap-3 border border-[#ba1a1a]/20">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#ba1a1a] text-white flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">warning</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#ba1a1a]">
-                Critical Syllabus Alert
-              </span>
-              <span className="text-[10px] bg-[#ba1a1a]/15 text-[#ba1a1a] px-2 py-0.5 rounded-full font-bold">
-                Action Required
-              </span>
-            </div>
-            <p className="text-sm font-bold text-[#93000a] mt-0.5">Class 10-B • Science</p>
-            <p className="text-xs text-[#93000a]/90 mt-0.5 leading-relaxed">
-              Current pace is <strong>42% completed</strong> (4 chapters behind projected mid-term schedule). Teacher:{' '}
-              <em>Ms. Preeti Sharma</em>.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end pt-1">
-          <button
-            onClick={() => sendTeacherReminder('Ms. Preeti Sharma', 'Science', 'Class 10-B')}
-            className="w-full sm:w-auto h-9 px-4 bg-[#ba1a1a] text-white rounded-xl text-xs font-bold shadow-sm hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 active:scale-95"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[16px]">send</span>
-            Send Reminder to Teacher
-          </button>
         </div>
       </div>
 
@@ -237,7 +197,7 @@ export const SyllabusView: React.FC = () => {
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm text-[#131b2e]">Curriculum Units</h3>
             <span className="bg-[#eaedff] text-[#434655] px-2.5 py-0.5 rounded-full text-xs font-bold">
-              {syllabus.chapters.length} Total
+              {syllabus.chapters.length} Units
             </span>
           </div>
           <button
@@ -257,7 +217,7 @@ export const SyllabusView: React.FC = () => {
             type="button"
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            Add Unit
+            + Add Unit
           </button>
         </div>
 
@@ -270,7 +230,7 @@ export const SyllabusView: React.FC = () => {
             return (
               <div
                 key={chapter.id}
-                className={`bg-white rounded-2xl shadow-sm overflow-hidden border transition-all ${
+                className={`bg-white rounded-3xl shadow-sm overflow-hidden border transition-all ${
                   isCurrentProgress
                     ? 'border-[#2563eb] shadow-[0_0_0_2px_rgba(37,99,235,0.2)]'
                     : 'border-[#eaedff]'
@@ -304,7 +264,7 @@ export const SyllabusView: React.FC = () => {
                         {chapter.status === 'Completed'
                           ? `Completed ${chapter.completionDate || 'Recently'}`
                           : chapter.status === 'In Progress'
-                          ? `${chapter.completedPeriods} / ${chapter.allottedPeriods} Periods Completed (${Math.round((chapter.completedPeriods / chapter.allottedPeriods) * 100)}%)`
+                          ? `${chapter.completedPeriods} / ${chapter.allottedPeriods} Periods Completed (${Math.round((chapter.completedPeriods / (chapter.allottedPeriods || 1)) * 100)}%)`
                           : `Scheduled ${chapter.scheduledDate || 'Upcoming'}`}
                       </span>
                     </div>
@@ -341,7 +301,7 @@ export const SyllabusView: React.FC = () => {
                 {isExpanded && (
                   <div className="px-4 pb-4 space-y-3 bg-[#faf8ff] pt-2 border-t border-[#eaedff]">
                     {isCurrentProgress && (
-                      <div className="p-3 rounded-xl bg-white border border-[#eaedff] space-y-2.5">
+                      <div className="p-3 rounded-2xl bg-white border border-[#eaedff] space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-[#737686]">Quick Status Change</span>
                           <select
@@ -352,7 +312,7 @@ export const SyllabusView: React.FC = () => {
                                 completedPeriods: e.target.value === 'Completed' ? chapter.allottedPeriods : chapter.completedPeriods,
                               })
                             }
-                            className="h-8 px-2 rounded-lg bg-[#f2f3ff] text-xs font-semibold text-[#131b2e] border border-[#dae2fd]"
+                            className="h-8 px-2 rounded-xl bg-[#f2f3ff] text-xs font-semibold text-[#131b2e] border border-[#dae2fd]"
                           >
                             <option value="Not Started">Not Started</option>
                             <option value="In Progress">In Progress</option>
@@ -370,14 +330,14 @@ export const SyllabusView: React.FC = () => {
                           <div className="w-full h-2 bg-[#eaedff] rounded-full overflow-hidden">
                             <div
                               className="bg-[#004ac6] h-full rounded-full transition-all duration-300"
-                              style={{ width: `${(chapter.completedPeriods / chapter.allottedPeriods) * 100}%` }}
+                              style={{ width: `${(chapter.completedPeriods / (chapter.allottedPeriods || 1)) * 100}%` }}
                             />
                           </div>
                         </div>
                       </div>
                     )}
 
-                    <div className="p-3 rounded-xl bg-white border border-[#eaedff] space-y-2 text-xs">
+                    <div className="p-3 rounded-2xl bg-white border border-[#eaedff] space-y-2 text-xs">
                       {chapter.lessonNotes && (
                         <div className="flex items-start gap-2">
                           <span className="material-symbols-outlined text-[18px] text-[#007d55] shrink-0 mt-0.5">
@@ -403,21 +363,22 @@ export const SyllabusView: React.FC = () => {
                           </div>
                         </div>
                       )}
-
-                      {chapter.prerequisites && (
-                        <div className="flex items-start gap-2 pt-1 border-t border-[#f2f3ff]">
-                          <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">
-                            info
-                          </span>
-                          <div>
-                            <span className="font-bold text-[#737686] block text-[10px] uppercase">Prerequisites</span>
-                            <p className="text-[#131b2e] mt-0.5">{chapter.prerequisites}</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-between items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete unit "${chapter.name}" from curriculum?`)) {
+                            deleteChapter(chapter.id);
+                          }
+                        }}
+                        className="h-8 px-3 rounded-xl bg-[#ffdad6] text-[#ba1a1a] text-xs font-bold flex items-center gap-1 hover:bg-[#ffb4ab]"
+                        type="button"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                        Delete Unit
+                      </button>
+
                       <button
                         onClick={() => setEditingChapterModalData(chapter)}
                         className="h-8 px-3 rounded-xl bg-[#eaedff] text-[#004ac6] text-xs font-bold flex items-center gap-1 hover:bg-[#dbe1ff]"

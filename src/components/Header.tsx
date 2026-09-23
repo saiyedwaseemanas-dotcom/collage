@@ -3,46 +3,98 @@ import { useApp } from '../context/AppContext';
 import { PWAInstallButton } from './PWAInstallButton';
 
 export const Header: React.FC = () => {
-  const { isDrawerOpen, setIsDrawerOpen, userRole, setUserRole, showToast, setIsApkModalOpen } = useApp();
+  const {
+    isDrawerOpen,
+    setIsDrawerOpen,
+    userRole,
+    setUserRole,
+    showToast,
+    setIsApkModalOpen,
+    institution,
+    openDispatchModal,
+    setActiveTab,
+  } = useApp();
+
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
-    { id: '1', title: 'Critical Attendance Defaulter', desc: 'Kabir Mehta (10-B) dipped to 71.4%', time: '10m ago', unread: true },
-    { id: '2', title: 'Syllabus Delay Alert', desc: 'Physics Ch. 4 (Class 10-B) 12 days behind', time: '1h ago', unread: true },
-    { id: '3', title: 'Google Sheets Auto-Sync', desc: '40 Student marks imported successfully', time: '2h ago', unread: false },
+    { id: '1', title: 'Attendance Alert', desc: 'Kabir Mehta dipped below required threshold', time: '10m ago', unread: true },
+    { id: '2', title: 'Curriculum Update', desc: 'Physics Unit 4 pending completion review', time: '1h ago', unread: true },
+    { id: '3', title: 'Master Spreadsheet Synced', desc: 'All student marks recalculated & verified', time: '2h ago', unread: false },
   ];
 
   return (
     <header className="fixed top-0 w-full z-40 bg-[#ffffff]/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe border-b border-[#eaedff]">
-      <div className="h-16 px-4 flex items-center justify-between gap-2 max-w-7xl mx-auto">
-        {/* Left: Drawer Trigger + Brand */}
-        <div className="flex items-center gap-2">
+      <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-7xl mx-auto">
+        {/* Left: Drawer Trigger + Dynamic Institution Brand */}
+        <div className="flex items-center gap-2 min-w-0">
           <button
             aria-label="Open menu"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg text-[#131b2e] hover:bg-[#f2f3ff] transition-colors active:scale-95"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-[#131b2e] hover:bg-[#f2f3ff] transition-colors active:scale-95 shrink-0"
             type="button"
           >
             <span className="material-symbols-outlined text-[22px]">menu</span>
           </button>
 
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsDrawerOpen(true)}>
-            <div className="w-8 h-8 rounded-lg bg-[#2563eb] flex items-center justify-center text-white shadow-sm">
-              <span className="material-symbols-outlined text-[20px]">school</span>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1">
-                <span className="font-semibold text-[16px] text-[#131b2e] leading-tight tracking-tight">EduTrack</span>
-                <span className="text-[11px] font-bold text-[#004ac6] bg-[#dbe1ff] px-1.5 py-0.2 rounded">PRO</span>
+          <div
+            className="flex items-center gap-2.5 cursor-pointer min-w-0"
+            onClick={() => setActiveTab('branding')}
+            title="Click to customize School / College Branding"
+          >
+            <img
+              src={institution.logoUrl}
+              alt={institution.shortName}
+              className="w-9 h-9 rounded-xl object-cover border border-[#dae2fd] shadow-xs shrink-0"
+            />
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-sm sm:text-[15px] text-[#131b2e] leading-tight tracking-tight truncate">
+                  {institution.shortName}
+                </span>
+                <span className="text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-1.5 py-0.2 rounded shrink-0">
+                  PRO
+                </span>
               </div>
-              <span className="text-[10px] leading-3 text-[#737686] font-medium">DPS, Sector 4</span>
+              <span className="text-[10px] leading-3 text-[#737686] font-medium truncate">
+                {institution.boardName.split(' ')[0]} • {institution.academicSession}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Right: Role Switcher + Notifications + Profile */}
-        <div className="flex items-center gap-2">
+        {/* Right: Push Dispatch + APK + Role Switcher + Profile */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Push Button: Quick PDF / Excel / WhatsApp Dispatch */}
+          <button
+            onClick={() =>
+              openDispatchModal({
+                title: 'Instant Document & WhatsApp Dispatch',
+                reportCategory: 'master-audit',
+                defaultFormat: 'pdf',
+                defaultRecipientType: 'principal',
+              })
+            }
+            className="hidden sm:flex items-center gap-1.5 h-9 px-3 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold shadow-xs hover:opacity-95 active:scale-95 transition-all"
+            type="button"
+            title="Export PDF / Excel / Google Sheets and send via WhatsApp / Email"
+          >
+            <span className="material-symbols-outlined text-[17px]">send</span>
+            <span>Push Report</span>
+          </button>
+
+          {/* White-Label Customizer Shortcut button */}
+          <button
+            onClick={() => setActiveTab('branding')}
+            className="hidden md:flex items-center gap-1 h-9 px-2.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#131b2e] rounded-xl text-xs font-bold transition-all border border-[#dae2fd]"
+            type="button"
+            title="School Branding Customizer"
+          >
+            <span className="material-symbols-outlined text-[16px] text-[#004ac6]">tune</span>
+            <span>Branding</span>
+          </button>
+
           {/* In-App PWA Install / APK Button */}
           <PWAInstallButton onOpenApkModal={() => setIsApkModalOpen(true)} />
 
@@ -59,8 +111,10 @@ export const Header: React.FC = () => {
             </button>
 
             {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-[#dae2fd] py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-3 py-1 text-[10px] uppercase font-bold text-[#737686] tracking-wider">Switch View Mode</div>
+              <div className="absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-[#dae2fd] py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-3 py-1 text-[10px] uppercase font-bold text-[#737686] tracking-wider">
+                  Switch View Mode
+                </div>
                 {(['Admin', 'Teacher', 'Principal'] as const).map(role => (
                   <button
                     key={role}
@@ -86,18 +140,20 @@ export const Header: React.FC = () => {
             <button
               aria-label="Notifications"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative w-10 h-10 flex items-center justify-center rounded-full text-[#434655] hover:bg-[#f2f3ff] transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full text-[#434655] hover:bg-[#f2f3ff] transition-colors"
               type="button"
             >
               <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ba1a1a] rounded-full ring-2 ring-white"></span>
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-[#dae2fd] p-3 z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center justify-between pb-2 border-b border-[#f2f3ff]">
                   <span className="font-semibold text-xs text-[#131b2e]">Urgent Notifications</span>
-                  <span className="text-[10px] bg-[#ffdad6] text-[#ba1a1a] font-bold px-1.5 py-0.5 rounded-full">2 Unread</span>
+                  <span className="text-[10px] bg-[#ffdad6] text-[#ba1a1a] font-bold px-1.5 py-0.5 rounded-full">
+                    2 Unread
+                  </span>
                 </div>
                 <div className="space-y-2 pt-2 max-h-64 overflow-y-auto">
                   {notifications.map(n => (
@@ -128,15 +184,6 @@ export const Header: React.FC = () => {
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Profile Avatar */}
-          <div className="flex items-center">
-            <img
-              alt="Profile Dr. Anita Roy"
-              className="w-8 h-8 rounded-full object-cover ring-2 ring-[#004ac6]/20 shadow-sm"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHjnfW0yD4P0JPB3pCJ8PvHI9VdRb2yr8Uaoib1V1D0SD7h-f1dSFY2rMXl9PP58IK3jJXKMqNrYLuXFSvhtN82V_qaE3gNo89VF9f9JuAuoDjW2OORZ1NI3KkSPLZ05a3hTO6XuiqShgR-PLjxuBOd5a16_0RtINVa0xAbUuhvnKk-UkbEEN2UZFFY7Dluql-5eL0SGWewPuxfBKozgrYjH8eTqaryMyeRomqQ_-p_6F8LHOlQgau"
-            />
           </div>
         </div>
       </div>
