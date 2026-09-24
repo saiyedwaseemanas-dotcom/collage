@@ -4,7 +4,6 @@ import { ActiveTab } from '../types';
 import {
   LayoutDashboard,
   Users,
-  BadgeAlert,
   CalendarCheck,
   BookOpen,
   Award,
@@ -17,7 +16,9 @@ import {
   Send,
   Smartphone,
   LogOut,
-  UserCheck
+  UserCheck,
+  Layers,
+  BookmarkCheck,
 } from 'lucide-react';
 
 export const NavigationDrawer: React.FC = () => {
@@ -30,6 +31,8 @@ export const NavigationDrawer: React.FC = () => {
     setAcademicSession,
     showToast,
     setIsApkModalOpen,
+    setIsClassModalOpen,
+    setIsSubjectModalOpen,
     institution,
     openDispatchModal,
   } = useApp();
@@ -42,7 +45,7 @@ export const NavigationDrawer: React.FC = () => {
     { id: 'syllabus', label: 'Curriculum & Syllabus', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'exams', label: 'Marks & Report Cards', icon: <Award className="w-5 h-5" /> },
     { id: 'sync', label: 'Google Sheets & Webhook', icon: <RefreshCw className="w-5 h-5" /> },
-    { id: 'branding', label: 'School & College Customizer', icon: <Palette className="w-5 h-5" />, badge: 'Client' },
+    { id: 'branding', label: 'Schools & Campuses', icon: <Palette className="w-5 h-5" />, badge: 'Client' },
     { id: 'settings', label: 'System Settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
@@ -121,6 +124,33 @@ export const NavigationDrawer: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Quick Academic Hierarchy Modals (Senior KG to PhD) */}
+        <div className="px-3 pb-2 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => {
+              setIsDrawerOpen(false);
+              setIsClassModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-1.5 h-9 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-xl text-[11px] font-bold border border-[#dae2fd] active:scale-95 transition-all"
+            type="button"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Manage Classes</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setIsDrawerOpen(false);
+              setIsSubjectModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-1.5 h-9 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#007d55] rounded-xl text-[11px] font-bold border border-[#dae2fd] active:scale-95 transition-all"
+            type="button"
+          >
+            <BookmarkCheck className="w-3.5 h-3.5" />
+            <span>Manage Subjects</span>
+          </button>
         </div>
 
         {/* Push Document & WhatsApp Quick Action Bar */}

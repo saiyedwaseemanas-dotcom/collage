@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Teacher } from '../types';
 import { useApp } from '../context/AppContext';
-import { UserCheck, X, Trash2, Save } from 'lucide-react';
+import { UserCheck, X, Trash2, Save, Wallet } from 'lucide-react';
 
 interface TeacherEditModalProps {
   teacher: Teacher | null;
@@ -11,18 +11,20 @@ interface TeacherEditModalProps {
 }
 
 export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isOpen, onClose, isNew = false }) => {
-  const { addTeacher, updateTeacher, deleteTeacher, showToast } = useApp();
+  const { addTeacher, updateTeacher, deleteTeacher, showToast, institution } = useApp();
 
   const [formData, setFormData] = useState<Partial<Teacher>>({
     name: '',
     designation: 'Senior PGT Faculty',
     subject: 'Mathematics',
+    department: 'Department of Mathematics',
     qualification: 'M.Sc., B.Ed.',
     phone: '+91 98765 11223',
     email: 'faculty@school.edu.in',
     status: 'In Campus',
     biometricCheckIn: '07:45 AM',
     scheduledOut: '02:30 PM',
+    baseSalary: 60000,
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     leaveBalance: { cl: 8, sl: 10, el: 15 },
     classesAssigned: ['Class 10-A', 'Class 10-B'],
@@ -36,12 +38,14 @@ export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isO
         name: '',
         designation: 'Senior Faculty',
         subject: 'Physics',
+        department: 'Department of Natural Sciences',
         qualification: 'M.Sc., Ph.D.',
         phone: '+91 98765 99887',
         email: 'teacher@school.edu.in',
         status: 'In Campus',
         biometricCheckIn: '07:50 AM',
         scheduledOut: '02:30 PM',
+        baseSalary: 65000,
         avatarUrl: `https://images.unsplash.com/photo-${1573496359142 + Math.floor(Math.random() * 500)}?w=150&auto=format&fit=crop&q=80`,
         leaveBalance: { cl: 10, sl: 10, el: 15 },
         classesAssigned: ['Class 10-A'],
@@ -91,7 +95,7 @@ export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isO
               <h3 className="font-bold text-sm sm:text-lg truncate">
                 {isNew ? 'Add Faculty Member' : `Edit: ${teacher?.name}`}
               </h3>
-              <p className="text-[10px] sm:text-xs text-white/80 truncate">Manage biometric status, subjects & classes</p>
+              <p className="text-[10px] sm:text-xs text-white/80 truncate">Manage biometric status, salary & classes</p>
             </div>
           </div>
           <button
@@ -103,7 +107,7 @@ export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isO
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-3.5 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
             <div className="space-y-1">
               <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Faculty Full Name</label>
@@ -130,13 +134,24 @@ export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isO
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div className="space-y-1">
               <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Designation</label>
               <input
                 type="text"
                 value={formData.designation}
                 onChange={e => setFormData({ ...formData, designation: e.target.value })}
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Department / Wing</label>
+              <input
+                type="text"
+                value={formData.department}
+                onChange={e => setFormData({ ...formData, department: e.target.value })}
+                placeholder="e.g. Science Wing"
                 className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
               />
             </div>
@@ -152,7 +167,18 @@ export const TeacherEditModal: React.FC<TeacherEditModalProps> = ({ teacher, isO
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Monthly Base Salary ({institution.currencySymbol})</label>
+              <input
+                type="number"
+                value={formData.baseSalary}
+                onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-mono font-bold text-[#007d55] border border-[#dae2fd] focus:bg-white"
+                placeholder="60000"
+              />
+            </div>
+
             <div className="space-y-1">
               <label className="text-[10px] sm:text-[11px] font-bold uppercase text-[#737686]">Phone / WhatsApp</label>
               <input

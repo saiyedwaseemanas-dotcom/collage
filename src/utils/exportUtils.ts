@@ -17,6 +17,7 @@ export interface ReportOptions {
     | 'marks-ledger'
     | 'marks-summary'
     | 'faculty-summary'
+    | 'faculty-payslip'
     | 'syllabus-progress'
     | 'syllabus-audit'
     | 'master-audit';

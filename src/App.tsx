@@ -8,6 +8,8 @@ import { ScheduleSyncModal } from './components/ScheduleSyncModal';
 import { ApkBuildModal } from './components/ApkBuildModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { ExportDispatchModal } from './components/ExportDispatchModal';
+import { ClassManageModal } from './components/ClassManageModal';
+import { SubjectManageModal } from './components/SubjectManageModal';
 
 import { DashboardView } from './views/DashboardView';
 import { AttendanceView } from './views/AttendanceView';
@@ -53,6 +55,8 @@ const MainContent: React.FC = () => {
       <ScheduleSyncModal />
       <ApkBuildModal isOpen={isApkModalOpen} onClose={() => setIsApkModalOpen(false)} />
       <ExportDispatchModal />
+      <ClassManageModal />
+      <SubjectManageModal />
 
       {/* Offline Status */}
       <OfflineIndicator />

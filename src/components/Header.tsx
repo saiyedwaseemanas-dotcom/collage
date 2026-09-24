@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { PWAInstallButton } from './PWAInstallButton';
 import { Menu, Send, SlidersHorizontal, ChevronDown, Check, Bell } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -10,7 +9,6 @@ export const Header: React.FC = () => {
     userRole,
     setUserRole,
     showToast,
-    setIsApkModalOpen,
     institution,
     openDispatchModal,
     setActiveTab,
@@ -51,21 +49,21 @@ export const Header: React.FC = () => {
             />
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1">
-                <span className="font-bold text-xs sm:text-sm text-[#131b2e] leading-tight tracking-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px]">
+                <span className="font-bold text-xs sm:text-sm text-[#131b2e] leading-tight tracking-tight truncate max-w-[120px] xs:max-w-[170px] sm:max-w-[240px]">
                   {institution.shortName}
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-1 sm:px-1.5 py-0.2 rounded shrink-0">
                   PRO
                 </span>
               </div>
-              <span className="text-[9px] sm:text-[10px] leading-3 text-[#737686] font-medium truncate max-w-[120px] xs:max-w-[160px] sm:max-w-[220px]">
+              <span className="text-[9px] sm:text-[10px] leading-3 text-[#737686] font-medium truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[260px]">
                 {institution.boardName.split(' ')[0]} • {institution.academicSession}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right: Push Dispatch + APK + Role Switcher + Profile */}
+        {/* Right: Push Dispatch + Branding Shortcut + Role Switcher + Profile */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Push Button: Quick PDF / Excel / WhatsApp Dispatch */}
           <button
@@ -93,11 +91,8 @@ export const Header: React.FC = () => {
             title="School Branding Customizer"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#004ac6]" />
-            <span>Branding</span>
+            <span>Schools & Branding</span>
           </button>
-
-          {/* In-App PWA Install / APK Button */}
-          <PWAInstallButton onOpenApkModal={() => setIsApkModalOpen(true)} />
 
           {/* Role Pill Dropdown */}
           <div className="relative">

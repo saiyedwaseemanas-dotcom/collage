@@ -2,12 +2,47 @@ import React from 'react';
 
 export type AttendanceStatus = 'P' | 'A' | 'L' | 'HD';
 
+export type ClassLevelCategory =
+  | 'Pre-Primary / Kindergarten'
+  | 'Primary (1-5)'
+  | 'Middle School (6-8)'
+  | 'Secondary (9-10)'
+  | 'Higher Secondary (11-12)'
+  | 'Undergraduate (UG)'
+  | 'Postgraduate (PG)'
+  | 'Doctorate (Ph.D)';
+
+export interface AcademicClass {
+  id: string;
+  name: string; // e.g. 'Senior KG', 'Class 10-A', 'B.Tech (CSE)', 'Ph.D (Research)'
+  category: ClassLevelCategory;
+  section?: string;
+  department?: string;
+  roomNo?: string;
+  mentorTeacherId?: string;
+  mentorTeacherName?: string;
+  capacity?: number;
+  totalEnrolled?: number;
+}
+
+export interface SubjectItem {
+  id: string;
+  name: string; // e.g. 'Phonics & Numeracy', 'Mathematics', 'Data Structures', 'Research Methodology'
+  code: string; // e.g. 'SKG-NUM', 'MATH-10', 'CSE-301', 'PHD-901'
+  classCategory: ClassLevelCategory;
+  specificClassName?: string; // e.g. 'Senior KG' or 'All Secondary' or 'Class 10-A'
+  creditHours?: number;
+  maxMarks: number;
+  passMarks: number;
+  teacherName?: string;
+}
+
 export interface Student {
   id: string;
   rollNo: string;
   name: string;
   classSec: string;
-  gradeLevel: '10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci' | string;
+  gradeLevel: string; // e.g., 'Senior KG', '10-A', 'B.Tech (CSE)', 'Ph.D'
   parentName: string;
   parentRelation: 'Father' | 'Mother' | 'Guardian';
   parentPhone: string;
@@ -30,6 +65,42 @@ export interface Student {
   };
 }
 
+export interface FacultyAttendanceLog {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  date: string; // YYYY-MM-DD
+  status: 'P' | 'A' | 'L' | 'HD' | 'OD'; // Present, Absent, Leave, Half Day, On Duty
+  inTime?: string;
+  outTime?: string;
+  authorizedByPrincipal: boolean;
+  principalName?: string;
+  principalNote?: string;
+  timestamp: string;
+}
+
+export interface FacultySalarySlip {
+  teacherId: string;
+  teacherName: string;
+  designation: string;
+  subject: string;
+  monthYear: string;
+  baseMonthlySalary: number;
+  totalWorkingDays: number;
+  presentDays: number;
+  onDutyDays: number;
+  halfDays: number;
+  paidLeavesCount: number;
+  unpaidAbsences: number;
+  perDayRate: number;
+  grossPayable: number;
+  lopDeduction: number;
+  dutyAllowance: number;
+  netPayableSalary: number;
+  isAuthorizedByPrincipal: boolean;
+  principalApprovalDate?: string;
+}
+
 export interface Teacher {
   id: string;
   name: string;
@@ -42,12 +113,23 @@ export interface Teacher {
   status: 'In Campus' | 'On Duty (Exam)' | 'On Leave' | 'Field Work';
   biometricCheckIn: string;
   scheduledOut: string;
+  baseSalary: number; // Monthly base salary in institution currency
   leaveBalance: {
     cl: number; // Casual Leave
     sl: number; // Sick Leave
     el: number; // Earned Leave
   };
   classesAssigned: string[];
+  department?: string;
+  monthlyAttendanceHistory?: {
+    [dateStr: string]: {
+      status: 'P' | 'A' | 'L' | 'HD' | 'OD';
+      note?: string;
+      authorized: boolean;
+      authorizedBy?: string;
+      timestamp?: string;
+    };
+  };
 }
 
 export interface CurriculumChapter {
@@ -66,7 +148,7 @@ export interface CurriculumChapter {
 
 export interface SubjectSyllabus {
   subject: string;
-  gradeLevel: '10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci' | string;
+  gradeLevel: string; // e.g., 'Senior KG', '10-A', 'B.Tech (CSE)', 'Ph.D'
   teacherName: string;
   teacherQualification: string;
   overallCompletion: number;
@@ -128,6 +210,7 @@ export interface DispatchModalConfig {
     | 'marks-ledger'
     | 'marks-summary'
     | 'faculty-summary'
+    | 'faculty-payslip'
     | 'syllabus-progress'
     | 'syllabus-audit'
     | 'master-audit';

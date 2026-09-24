@@ -648,6 +648,41 @@ export const SheetsSyncView: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Developer Accreditation & Support Portal */}
+      <section className="bg-gradient-to-r from-[#00174b] via-[#004ac6] to-[#1e3a8a] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md border border-[#dae2fd]/30 text-left">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-[#6ffbbe] font-bold">
+              Engineering Architecture & Deployment
+            </span>
+            <h3 className="text-base sm:text-xl font-bold tracking-tight">
+              Version Ai© by Mr. Anas Saiyed (Mob: +91 9429960782)
+            </h3>
+            <p className="text-xs text-white/80 max-w-xl">
+              Custom Institutional ERP Engine, Google Sheets Pipeline & Automated WhatsApp Telemetry. Developed with precision for Pre-Primary to Doctorate Ph.D institutions.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href="tel:9429960782"
+              className="h-9 px-3.5 bg-white text-[#004ac6] text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs hover:bg-[#f2f3ff] active:scale-95 transition-all"
+            >
+              <span>Call Dev (9429960782)</span>
+            </a>
+            <a
+              href="https://wa.me/919429960782?text=Hello%20Mr.Anas%20Saiyed,%20contacting%20regarding%20Version%20Ai%20EduTrack%20System"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-9 px-3.5 bg-[#007d55] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs hover:bg-[#006644] active:scale-95 transition-all"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

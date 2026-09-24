@@ -91,7 +91,7 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={institution.name}
-                onChange={e => updateInstitution({ name: e.target.value })}
+                onChange={e => updateInstitution(institution.id, { name: e.target.value })}
                 className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
               />
             </div>
@@ -100,7 +100,7 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={institution.affiliationCode}
-                onChange={e => updateInstitution({ affiliationCode: e.target.value })}
+                onChange={e => updateInstitution(institution.id, { affiliationCode: e.target.value })}
                 className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] font-mono border border-[#dae2fd] focus:bg-white"
               />
             </div>
@@ -112,7 +112,7 @@ export const SettingsView: React.FC = () => {
               <input
                 type="text"
                 value={institution.principalName}
-                onChange={e => updateInstitution({ principalName: e.target.value })}
+                onChange={e => updateInstitution(institution.id, { principalName: e.target.value })}
                 className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
               />
             </div>
@@ -121,7 +121,7 @@ export const SettingsView: React.FC = () => {
               <input
                 type="number"
                 value={institution.defaulterThreshold}
-                onChange={e => updateInstitution({ defaulterThreshold: parseInt(e.target.value) || 75 })}
+                onChange={e => updateInstitution(institution.id, { defaulterThreshold: parseInt(e.target.value) || 75 })}
                 className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] font-mono border border-[#dae2fd] focus:bg-white"
               />
             </div>
@@ -143,7 +143,7 @@ export const SettingsView: React.FC = () => {
             <textarea
               rows={3}
               value={institution.whatsappTemplate}
-              onChange={e => updateInstitution({ whatsappTemplate: e.target.value })}
+              onChange={e => updateInstitution(institution.id, { whatsappTemplate: e.target.value })}
               className="w-full p-2.5 sm:p-3 bg-[#f2f3ff] rounded-xl sm:rounded-2xl text-xs text-[#131b2e] border border-[#dae2fd] focus:bg-white"
             />
             <span className="text-[10px] text-[#737686] block">Placeholders: &#123;student_name&#125;, &#123;school_name&#125;, &#123;status&#125;, &#123;attendance_pct&#125;</span>

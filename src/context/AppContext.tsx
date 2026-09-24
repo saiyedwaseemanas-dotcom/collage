@@ -1,7 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Student, Teacher, SubjectSyllabus, ActiveTab, AttendanceStatus, WebhookLog, InstitutionProfile, DispatchModalConfig } from '../types';
-import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS } from '../data/mockData';
+import {
+  Student,
+  Teacher,
+  SubjectSyllabus,
+  ActiveTab,
+  AttendanceStatus,
+  WebhookLog,
+  InstitutionProfile,
+  DispatchModalConfig,
+  AcademicClass,
+  SubjectItem,
+  FacultyAttendanceLog,
+  FacultySalarySlip,
+} from '../types';
+import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS, INITIAL_FACULTY_LOGS } from '../data/mockData';
 import { DEFAULT_INSTITUTION, CLIENT_PRESETS } from '../data/brandingPresets';
+import { INITIAL_CLASSES, INITIAL_SUBJECTS } from '../data/classesAndSubjectsData';
 
 interface ToastInfo {
   id: string;
@@ -20,15 +34,38 @@ interface AppContextType {
   academicSession: string;
   setAcademicSession: (session: string) => void;
 
-  // Institution / White-Label Client Rebranding
+  // Institution / Multi-School Management (CRUD)
+  institutions: InstitutionProfile[];
   institution: InstitutionProfile;
-  updateInstitution: (profile: Partial<InstitutionProfile>) => void;
+  addInstitution: (inst: InstitutionProfile) => void;
+  updateInstitution: (id: string, updates: Partial<InstitutionProfile>) => void;
+  deleteInstitution: (id: string) => void;
+  switchInstitution: (id: string) => void;
   applyClientPreset: (presetId: string) => void;
+
+  // Classes Management (Senior KG to PhD Level)
+  classes: AcademicClass[];
+  addClass: (newCls: AcademicClass) => void;
+  updateClass: (id: string, updates: Partial<AcademicClass>) => void;
+  deleteClass: (id: string) => void;
+  selectedClass: string;
+  setSelectedClass: (cls: string) => void;
+  isClassModalOpen: boolean;
+  setIsClassModalOpen: (open: boolean) => void;
+
+  // Subjects Management (Mapped by Class Level from Senior KG to PhD)
+  subjects: SubjectItem[];
+  addSubject: (newSubj: SubjectItem) => void;
+  updateSubject: (id: string, updates: Partial<SubjectItem>) => void;
+  deleteSubject: (id: string) => void;
+  getSubjectsForClass: (classNameOrLevel: string) => SubjectItem[];
+  selectedSubject: string;
+  setSelectedSubject: (subj: string) => void;
+  isSubjectModalOpen: boolean;
+  setIsSubjectModalOpen: (open: boolean) => void;
 
   // Students & Database CRUD
   students: Student[];
-  selectedClass: 'Class 10-A' | 'Class 10-B' | 'Class 9-A' | 'Class 11-Sci' | 'Class 12-Sci' | string;
-  setSelectedClass: (cls: 'Class 10-A' | 'Class 10-B' | 'Class 9-A' | 'Class 11-Sci' | 'Class 12-Sci' | string) => void;
   currentDateLabel: string;
   shiftDate: (dir: number) => void;
   updateStudentAttendance: (studentId: string, status: AttendanceStatus) => void;
@@ -51,6 +88,19 @@ interface AppContextType {
   addTeacher: (teacher: Omit<Teacher, 'id'> | Teacher) => void;
   updateTeacher: (id: string, updates: Partial<Teacher>) => void;
   deleteTeacher: (id: string) => void;
+
+  // Faculty Attendance Sheet & Principal Authorization Portal
+  facultyAttendanceLogs: FacultyAttendanceLog[];
+  recordFacultyAttendance: (
+    teacherId: string,
+    status: 'P' | 'A' | 'L' | 'HD' | 'OD',
+    note: string,
+    isAuthorized: boolean,
+    principalName?: string
+  ) => void;
+  calculateFacultySalary: (teacher: Teacher, totalWorkingDays?: number, monthYear?: string) => FacultySalarySlip;
+  selectedFacultyForSlip: FacultySalarySlip | null;
+  setSelectedFacultyForSlip: (slip: FacultySalarySlip | null) => void;
 
   // Syllabus & Curriculum CRUD
   syllabus: SubjectSyllabus;
@@ -109,17 +159,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [academicSession, setAcademicSession] = useState('2024 - 2025 (Term 2)');
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
-  // Institution Profile (Stored in localStorage for persistence)
-  const [institution, setInstitution] = useState<InstitutionProfile>(() => {
+  // 1. Multi-School / Institutions CRUD (Stored in localStorage)
+  const [institutions, setInstitutions] = useState<InstitutionProfile[]>(() => {
     try {
-      const saved = localStorage.getItem('edutrack_institution');
-      return saved ? JSON.parse(saved) : DEFAULT_INSTITUTION;
+      const saved = localStorage.getItem('edutrack_institutions_list');
+      return saved ? JSON.parse(saved) : CLIENT_PRESETS;
     } catch {
-      return DEFAULT_INSTITUTION;
+      return CLIENT_PRESETS;
     }
   });
 
-  // Students Database (Stored in localStorage for persistence)
+  const [activeInstitutionId, setActiveInstitutionId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_active_institution_id');
+      return saved || DEFAULT_INSTITUTION.id;
+    } catch {
+      return DEFAULT_INSTITUTION.id;
+    }
+  });
+
+  const institution = useMemo(() => {
+    return institutions.find(inst => inst.id === activeInstitutionId) || institutions[0] || DEFAULT_INSTITUTION;
+  }, [institutions, activeInstitutionId]);
+
+  // 2. Classes Management (Senior KG to PhD Level)
+  const [classes, setClasses] = useState<AcademicClass[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_classes_list');
+      return saved ? JSON.parse(saved) : INITIAL_CLASSES;
+    } catch {
+      return INITIAL_CLASSES;
+    }
+  });
+
+  const [selectedClass, setSelectedClass] = useState<string>('Class 10-A');
+  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
+
+  // 3. Subjects Management (Mapped per Class / Level)
+  const [subjects, setSubjects] = useState<SubjectItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_subjects_list');
+      return saved ? JSON.parse(saved) : INITIAL_SUBJECTS;
+    } catch {
+      return INITIAL_SUBJECTS;
+    }
+  });
+
+  const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+
+  // 4. Students Database
   const [students, setStudents] = useState<Student[]>(() => {
     try {
       const saved = localStorage.getItem('edutrack_students');
@@ -129,14 +218,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  const [selectedClass, setSelectedClass] = useState<string>('Class 10-A');
   const [currentDateLabel, setCurrentDateLabel] = useState('Today: Oct 24, 2024');
   const [filterDefaultersOnly, setFilterDefaultersOnly] = useState(false);
-
-  // Marks & Grading
   const [selectedExam, setSelectedExam] = useState<'UT-1' | 'UT-2' | 'Mid-Term' | 'Final'>('UT-2');
 
-  // Teachers Database (Stored in localStorage)
+  // 5. Teachers Database
   const [teachers, setTeachers] = useState<Teacher[]>(() => {
     try {
       const saved = localStorage.getItem('edutrack_teachers');
@@ -146,7 +232,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Syllabus (Stored in localStorage)
+  // 6. Faculty Attendance Logs & Principal Authorization Audit
+  const [facultyAttendanceLogs, setFacultyAttendanceLogs] = useState<FacultyAttendanceLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_faculty_attendance_logs');
+      return saved ? JSON.parse(saved) : INITIAL_FACULTY_LOGS;
+    } catch {
+      return INITIAL_FACULTY_LOGS;
+    }
+  });
+
+  const [selectedFacultyForSlip, setSelectedFacultyForSlip] = useState<FacultySalarySlip | null>(null);
+
+  // 7. Syllabus
   const [syllabus, setSyllabus] = useState<SubjectSyllabus>(() => {
     try {
       const saved = localStorage.getItem('edutrack_syllabus');
@@ -156,7 +254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Metrics trigger timestamp for instant chart re-renders
+  // Metrics trigger
   const [metricsKey, setMetricsKey] = useState(Date.now());
 
   // Google Sheets & Webhooks
@@ -187,10 +285,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     reportCategory: 'master-audit',
   });
 
-  // Save to localStorage automatically on changes
+  // Save to localStorage automatically
   useEffect(() => {
-    localStorage.setItem('edutrack_institution', JSON.stringify(institution));
-  }, [institution]);
+    localStorage.setItem('edutrack_institutions_list', JSON.stringify(institutions));
+    localStorage.setItem('edutrack_active_institution_id', activeInstitutionId);
+  }, [institutions, activeInstitutionId]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_classes_list', JSON.stringify(classes));
+    setMetricsKey(Date.now());
+  }, [classes]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_subjects_list', JSON.stringify(subjects));
+    setMetricsKey(Date.now());
+  }, [subjects]);
 
   useEffect(() => {
     localStorage.setItem('edutrack_students', JSON.stringify(students));
@@ -201,6 +310,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('edutrack_teachers', JSON.stringify(teachers));
     setMetricsKey(Date.now());
   }, [teachers]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_faculty_attendance_logs', JSON.stringify(facultyAttendanceLogs));
+    setMetricsKey(Date.now());
+  }, [facultyAttendanceLogs]);
 
   useEffect(() => {
     localStorage.setItem('edutrack_syllabus', JSON.stringify(syllabus));
@@ -221,6 +335,248 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [toast]);
 
+  // Multi-Institution CRUD Methods
+  const addInstitution = (newInst: InstitutionProfile) => {
+    setInstitutions(prev => [newInst, ...prev]);
+    setActiveInstitutionId(newInst.id);
+    setAcademicSession(newInst.academicSession);
+    showToast(`School / College "${newInst.name}" added and activated!`);
+  };
+
+  const updateInstitution = (id: string, updates: Partial<InstitutionProfile>) => {
+    setInstitutions(prev =>
+      prev.map(inst => (inst.id === id ? { ...inst, ...updates } : inst))
+    );
+    showToast('Institution profile and branding updated successfully!');
+  };
+
+  const deleteInstitution = (id: string) => {
+    if (institutions.length <= 1) {
+      showToast('Cannot remove the only remaining institution profile', 'warning');
+      return;
+    }
+    const remaining = institutions.filter(inst => inst.id !== id);
+    setInstitutions(remaining);
+    if (activeInstitutionId === id) {
+      setActiveInstitutionId(remaining[0].id);
+      setAcademicSession(remaining[0].academicSession);
+    }
+    showToast('Institution removed from database');
+  };
+
+  const switchInstitution = (id: string) => {
+    const target = institutions.find(inst => inst.id === id);
+    if (target) {
+      setActiveInstitutionId(target.id);
+      setAcademicSession(target.academicSession);
+      showToast(`Switched active school to ${target.shortName}`);
+    }
+  };
+
+  const applyClientPreset = (presetId: string) => {
+    const preset = CLIENT_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      const exists = institutions.find(i => i.id === preset.id);
+      if (!exists) {
+        setInstitutions(prev => [preset, ...prev]);
+      }
+      setActiveInstitutionId(preset.id);
+      setAcademicSession(preset.academicSession);
+      showToast(`Applied preset: ${preset.shortName}`);
+    }
+  };
+
+  // Class Management CRUD Methods (Senior KG to PhD)
+  const addClass = (newCls: AcademicClass) => {
+    setClasses(prev => [newCls, ...prev]);
+    setSelectedClass(newCls.name);
+    showToast(`Added new class: ${newCls.name} (${newCls.category})`);
+  };
+
+  const updateClass = (id: string, updates: Partial<AcademicClass>) => {
+    setClasses(prev =>
+      prev.map(c => (c.id === id ? { ...c, ...updates } : c))
+    );
+    showToast('Class details updated');
+  };
+
+  const deleteClass = (id: string) => {
+    setClasses(prev => prev.filter(c => c.id !== id));
+    showToast('Class removed from academic list');
+  };
+
+  // Subject Management CRUD Methods (Mapped by Class Level)
+  const addSubject = (newSubj: SubjectItem) => {
+    setSubjects(prev => [newSubj, ...prev]);
+    setSelectedSubject(newSubj.name);
+    showToast(`Added subject "${newSubj.name}" (${newSubj.code})`);
+  };
+
+  const updateSubject = (id: string, updates: Partial<SubjectItem>) => {
+    setSubjects(prev =>
+      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
+    );
+    showToast('Subject configuration saved');
+  };
+
+  const deleteSubject = (id: string) => {
+    setSubjects(prev => prev.filter(s => s.id !== id));
+    showToast('Subject removed from curriculum list');
+  };
+
+  const getSubjectsForClass = (classNameOrLevel: string): SubjectItem[] => {
+    const normalized = classNameOrLevel.toLowerCase();
+    return subjects.filter(subj => {
+      if (subj.specificClassName && subj.specificClassName.toLowerCase() === normalized) {
+        return true;
+      }
+      if (normalized.includes('kg') && subj.classCategory === 'Pre-Primary / Kindergarten') return true;
+      if ((normalized.includes('class 9') || normalized.includes('class 10')) && subj.classCategory === 'Secondary (9-10)') return true;
+      if ((normalized.includes('class 11') || normalized.includes('class 12')) && subj.classCategory === 'Higher Secondary (11-12)') return true;
+      if ((normalized.includes('b.tech') || normalized.includes('b.sc') || normalized.includes('bca') || normalized.includes('b.com')) && subj.classCategory === 'Undergraduate (UG)') return true;
+      if ((normalized.includes('m.tech') || normalized.includes('m.sc') || normalized.includes('mba') || normalized.includes('mca')) && subj.classCategory === 'Postgraduate (PG)') return true;
+      if (normalized.includes('ph.d') && subj.classCategory === 'Doctorate (Ph.D)') return true;
+      return false;
+    });
+  };
+
+  // Faculty Attendance Sheet with Principal Authorization & Notes
+  const recordFacultyAttendance = (
+    teacherId: string,
+    status: 'P' | 'A' | 'L' | 'HD' | 'OD',
+    note: string,
+    isAuthorized: boolean,
+    principalName?: string
+  ) => {
+    const today = new Date().toISOString().split('T')[0];
+    const teacher = teachers.find(t => t.id === teacherId);
+    const teacherName = teacher ? teacher.name : 'Faculty Member';
+    const authName = principalName || `${institution.principalName} (${institution.principalDesignation})`;
+
+    const newLog: FacultyAttendanceLog = {
+      id: `flog-${Date.now()}`,
+      teacherId,
+      teacherName,
+      date: today,
+      status,
+      inTime: status === 'P' || status === 'HD' || status === 'OD' ? '08:00 AM' : undefined,
+      outTime: status === 'P' || status === 'OD' ? '02:30 PM' : status === 'HD' ? '12:30 PM' : undefined,
+      authorizedByPrincipal: isAuthorized,
+      principalName: authName,
+      principalNote: note || (isAuthorized ? `Authorized by ${authName}` : 'Self-marked attendance'),
+      timestamp: new Date().toLocaleString(),
+    };
+
+    setFacultyAttendanceLogs(prev => [newLog, ...prev]);
+
+    // Map into teacher object
+    setTeachers(prev =>
+      prev.map(t => {
+        if (t.id === teacherId) {
+          const statusText =
+            status === 'P'
+              ? 'In Campus'
+              : status === 'OD'
+              ? 'On Duty (Exam)'
+              : status === 'L'
+              ? 'On Leave'
+              : status === 'HD'
+              ? 'In Campus'
+              : 'On Leave';
+
+          return {
+            ...t,
+            status: statusText as Teacher['status'],
+            monthlyAttendanceHistory: {
+              ...(t.monthlyAttendanceHistory || {}),
+              [today]: {
+                status,
+                note: note || (isAuthorized ? `Authorized by ${authName}` : 'Attendance log'),
+                authorized: isAuthorized,
+                authorizedBy: authName,
+                timestamp: new Date().toLocaleString(),
+              },
+            },
+          };
+        }
+        return t;
+      })
+    );
+
+    showToast(`Faculty attendance recorded for ${teacherName} (${status}) - Authorized by Principal`);
+  };
+
+  // Salary Calculation based on faculty attendance
+  const calculateFacultySalary = (
+    teacher: Teacher,
+    totalWorkingDays: number = 26,
+    monthYear: string = 'October 2024'
+  ): FacultySalarySlip => {
+    const baseSalary = teacher.baseSalary || 60000;
+    const perDayRate = parseFloat((baseSalary / totalWorkingDays).toFixed(2));
+
+    // Calculate logs for this teacher
+    const history = teacher.monthlyAttendanceHistory || {};
+    let presentDays = 0;
+    let onDutyDays = 0;
+    let halfDays = 0;
+    let paidLeavesCount = 0;
+    let unpaidAbsences = 0;
+
+    const values = Object.values(history);
+    if (values.length > 0) {
+      values.forEach(rec => {
+        if (rec.status === 'P') presentDays++;
+        else if (rec.status === 'OD') onDutyDays++;
+        else if (rec.status === 'HD') halfDays++;
+        else if (rec.status === 'L') {
+          if (rec.authorized) paidLeavesCount++;
+          else unpaidAbsences++;
+        } else if (rec.status === 'A') {
+          unpaidAbsences++;
+        }
+      });
+    } else {
+      // Default baseline estimate if no explicit logs
+      presentDays = totalWorkingDays - 2;
+      onDutyDays = 1;
+      paidLeavesCount = 1;
+      halfDays = 0;
+      unpaidAbsences = 0;
+    }
+
+    // LOP deduction (unpaid absences + half day reduction)
+    const lopDays = unpaidAbsences + halfDays * 0.5;
+    const lopDeduction = parseFloat((lopDays * perDayRate).toFixed(2));
+
+    // Duty Allowance for exam duties / seminars
+    const dutyAllowance = onDutyDays * 800; // Special duty allowance
+    const grossPayable = baseSalary + dutyAllowance;
+    const netPayableSalary = Math.max(0, Math.round(grossPayable - lopDeduction));
+
+    return {
+      teacherId: teacher.id,
+      teacherName: teacher.name,
+      designation: teacher.designation,
+      subject: teacher.subject,
+      monthYear,
+      baseMonthlySalary: baseSalary,
+      totalWorkingDays,
+      presentDays,
+      onDutyDays,
+      halfDays,
+      paidLeavesCount,
+      unpaidAbsences,
+      perDayRate,
+      grossPayable,
+      lopDeduction,
+      dutyAllowance,
+      netPayableSalary,
+      isAuthorizedByPrincipal: true,
+      principalApprovalDate: new Date().toLocaleDateString(),
+    };
+  };
+
   const openDispatchModal = (config: Partial<DispatchModalConfig>) => {
     setDispatchModalConfig({
       isOpen: true,
@@ -235,18 +591,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const closeDispatchModal = () => {
     setDispatchModalConfig(prev => ({ ...prev, isOpen: false }));
-  };
-
-  const updateInstitution = (profile: Partial<InstitutionProfile>) => {
-    setInstitution(prev => ({ ...prev, ...profile }));
-  };
-
-  const applyClientPreset = (presetId: string) => {
-    const preset = CLIENT_PRESETS.find(p => p.id === presetId);
-    if (preset) {
-      setInstitution(preset);
-      setAcademicSession(preset.academicSession);
-    }
   };
 
   const shiftDate = (dir: number) => {
@@ -285,8 +629,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const markAllPresent = () => {
     setStudents(prev =>
       prev.map(s => {
-        const gradeKey = selectedClass.replace('Class ', '');
-        if (s.gradeLevel === gradeKey || selectedClass === 'ALL') {
+        if (s.classSec === selectedClass || s.gradeLevel === selectedClass.replace('Class ', '') || selectedClass === 'ALL') {
           return {
             ...s,
             todayStatus: 'P',
@@ -340,13 +683,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const saveAllMarks = () => {
-    showToast('All UT-2 marks updated, recalculated & saved in database!');
+    showToast('All marks updated, recalculated & saved in database!');
   };
 
   const addTeacher = (teacherData: Omit<Teacher, 'id'> | Teacher) => {
     const newTeacher: Teacher = {
       id: `tch-${Date.now()}`,
       ...teacherData,
+      baseSalary: (teacherData as Teacher).baseSalary || 60000,
     } as Teacher;
     setTeachers(prev => [newTeacher, ...prev]);
   };
@@ -381,7 +725,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         statusText: completionPct >= prev.targetMidTerm ? 'On Track' : 'Behind Schedule',
       };
     });
-
     if (notify) {
       showToast('Progress saved & notification dispatched to parents & students!');
     } else {
@@ -439,12 +782,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const importRecords = async () => {
     setIsImporting(true);
     setImportProgress(0);
-
     for (let p = 25; p <= 100; p += 25) {
       await new Promise(r => setTimeout(r, 220));
       setImportProgress(p);
     }
-
     setIsImporting(false);
     showToast(`${students.length} Student records successfully validated and imported!`);
   };
@@ -453,7 +794,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsExporting(true);
     await new Promise(r => setTimeout(r, 1400));
     setIsExporting(false);
-    showToast('Students, Attendance, Marks & Syllabus exported to Google Drive & Sheets!');
+    showToast('Students, Attendance, Marks, Faculty & Syllabus exported to Google Drive & Sheets!');
   };
 
   const fireMockWebhook = () => {
@@ -481,12 +822,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         academicSession,
         setAcademicSession,
+
+        // Multi-School CRUD
+        institutions,
         institution,
+        addInstitution,
         updateInstitution,
+        deleteInstitution,
+        switchInstitution,
         applyClientPreset,
-        students,
+
+        // Classes Management
+        classes,
+        addClass,
+        updateClass,
+        deleteClass,
         selectedClass,
         setSelectedClass,
+        isClassModalOpen,
+        setIsClassModalOpen,
+
+        // Subjects Management
+        subjects,
+        addSubject,
+        updateSubject,
+        deleteSubject,
+        getSubjectsForClass,
+        selectedSubject,
+        setSelectedSubject,
+        isSubjectModalOpen,
+        setIsSubjectModalOpen,
+
+        // Students
+        students,
         currentDateLabel,
         shiftDate,
         updateStudentAttendance,
@@ -500,16 +868,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedExam,
         updateStudentMark,
         saveAllMarks,
+
+        // Teachers & Faculty
         teachers,
         updateTeacherStatus,
         addTeacher,
         updateTeacher,
         deleteTeacher,
+
+        // Faculty Attendance Sheet & Salary
+        facultyAttendanceLogs,
+        recordFacultyAttendance,
+        calculateFacultySalary,
+        selectedFacultyForSlip,
+        setSelectedFacultyForSlip,
+
+        // Syllabus
         syllabus,
         updateChapter,
         addChapter,
         deleteChapter,
         sendTeacherReminder,
+
+        // Google Sheets
         isMasterSheetConnected,
         setIsMasterSheetConnected,
         isTwoWaySyncActive,
@@ -526,6 +907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isExporting,
         webhookLogs,
         fireMockWebhook,
+
         toast,
         showToast,
         activeStudentForReport: activeStudentForReport || students[0] || null,
