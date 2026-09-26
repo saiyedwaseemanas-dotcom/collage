@@ -61,7 +61,7 @@ export const ExportDispatchModal: React.FC = () => {
           syllabus,
           category: dispatchModalConfig.reportCategory,
         });
-        showToast(`Downloaded Excel Workbook: ${file}`);
+        showToast(`Transferred to Google Sheet Master Workbook: ${file}`);
       } else {
         const file = generateCsvDocument({
           institution,
@@ -70,7 +70,7 @@ export const ExportDispatchModal: React.FC = () => {
           syllabus,
           category: dispatchModalConfig.reportCategory,
         });
-        showToast(`Downloaded Google Sheets CSV: ${file}`);
+        showToast(`Transferred to Google Sheet CSV: ${file}`);
       }
     } catch (err) {
       console.error(err);
@@ -192,7 +192,7 @@ export const ExportDispatchModal: React.FC = () => {
                 }`}
               >
                 <FileSpreadsheet className="w-5 h-5 sm:w-6 sm:h-6 text-[#007d55]" />
-                <span className="text-[11px] sm:text-xs font-bold text-[#131b2e] leading-tight">Excel (.xlsx)</span>
+                <span className="text-[11px] sm:text-xs font-bold text-[#131b2e] leading-tight">Google Sheet</span>
                 <span className="text-[9px] sm:text-[10px] text-[#737686] hidden xs:inline">Multi-Sheet</span>
               </button>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student } from '../types';
 import { StudentDetailModal } from '../components/StudentDetailModal';
@@ -10,20 +10,34 @@ import {
   Edit3,
   Award,
   Eye,
+  Layers,
+  Camera,
+  Plus,
+  Trash2,
+  Wallet,
+  CalendarCheck,
+  MessageSquare,
+  ShieldCheck,
+  Building2,
+  GraduationCap,
 } from 'lucide-react';
 
 export const StudentsDirectoryView: React.FC = () => {
   const {
     students,
+    classes,
+    setIsClassModalOpen,
     institution,
     showToast,
     setActiveStudentForReport,
     setActiveTab,
     openDispatchModal,
+    getFeeForStudent,
+    deleteStudent,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClassFilter, setSelectedClassFilter] = useState<'ALL' | '10-A' | '10-B' | '9-A' | '11-Sci' | '12-Sci'>('ALL');
+  const [selectedClassFilter, setSelectedClassFilter] = useState<string>('ALL');
   const [inspectStudent, setInspectStudent] = useState<Student | null>(null);
 
   // Edit / Add Modal state
@@ -31,14 +45,26 @@ export const StudentsDirectoryView: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNewStudent, setIsNewStudent] = useState(false);
 
-  const filteredStudents = students.filter(s => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.rollNo.includes(searchQuery) ||
-      s.parentName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesClass = selectedClassFilter === 'ALL' || s.gradeLevel === selectedClassFilter;
-    return matchesSearch && matchesClass;
-  });
+  const filteredStudents = useMemo(() => {
+    return students.filter(s => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.rollNo.toLowerCase().includes(q) ||
+        (s.parentName && s.parentName.toLowerCase().includes(q)) ||
+        (s.classSec && s.classSec.toLowerCase().includes(q));
+
+      if (selectedClassFilter === 'ALL') return matchesSearch;
+
+      const targetGrade = selectedClassFilter.replace(/^class\s*/i, '').trim().toLowerCase();
+      const sGrade = s.gradeLevel ? s.gradeLevel.toLowerCase() : '';
+      const sClass = s.classSec ? s.classSec.toLowerCase() : '';
+      const matchesClass = sGrade === targetGrade || sClass === selectedClassFilter.toLowerCase() || sClass.includes(targetGrade);
+
+      return matchesSearch && matchesClass;
+    });
+  }, [students, searchQuery, selectedClassFilter]);
 
   const handleAddNewStudent = () => {
     setEditingStudent(null);
@@ -53,18 +79,18 @@ export const StudentsDirectoryView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full px-2.5 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 max-w-7xl mx-auto text-left pb-24">
+    <div className="flex flex-col w-full px-2.5 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 max-w-7xl mx-auto text-left pb-28">
       {/* Title & Action Buttons */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-2xl font-bold text-[#131b2e]">Students Database</h2>
+            <h2 className="text-lg sm:text-2xl font-bold text-[#131b2e]">Students Database & Directory</h2>
             <span className="px-2.5 py-0.5 bg-[#dbe1ff] text-[#004ac6] font-bold text-xs rounded-full">
               {filteredStudents.length} Records
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-[#737686]">
-            Complete database ledger with Add, Edit, Delete, Save and instant PDF/Excel/WhatsApp push actions.
+            Class-wise student roster spanning Kindergarten to Doctorate Ph.D with direct photo uploads, parent communication & fee telemetry.
           </p>
         </div>
 
@@ -75,7 +101,7 @@ export const StudentsDirectoryView: React.FC = () => {
               openDispatchModal({
                 title: 'Students Master Roster Export',
                 reportCategory: 'attendance-register',
-                defaultFormat: 'excel',
+                defaultFormat: 'sheets',
                 defaultRecipientType: 'principal',
               })
             }
@@ -88,7 +114,7 @@ export const StudentsDirectoryView: React.FC = () => {
 
           <button
             onClick={handleAddNewStudent}
-            className="h-10 px-3.5 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl sm:rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            className="h-10 px-3.5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl sm:rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
             type="button"
           >
             <UserPlus className="w-4 h-4" />
@@ -97,142 +123,197 @@ export const StudentsDirectoryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar & Class Filters */}
-      <div className="bg-white p-3 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-2.5 sm:space-y-3">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by student name, roll no, or parent name..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full h-10 sm:h-11 pl-9 sm:pl-10 pr-4 bg-[#f2f3ff] rounded-xl sm:rounded-2xl text-xs text-[#131b2e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004ac6]/30 border border-[#dae2fd]"
-          />
-          <Search className="w-4 h-4 text-[#737686] absolute left-3 top-3 sm:top-3.5" />
+      {/* Class Option Selector & Search Bar */}
+      <div className="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border border-[#eaedff] space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          {/* Search Input */}
+          <div className="relative md:col-span-2">
+            <input
+              type="text"
+              placeholder="Search by student name, roll number, parent name, or class..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-4 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#004ac6]/30 border border-[#dae2fd]"
+            />
+            <Search className="w-4 h-4 text-[#737686] absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+
+          {/* Universal Class Option Dropdown */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <select
+                value={selectedClassFilter}
+                onChange={e => setSelectedClassFilter(e.target.value)}
+                className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl text-xs font-bold text-[#131b2e] border border-[#dae2fd] focus:bg-white cursor-pointer"
+              >
+                <option value="ALL">All Classes & Tiers ({classes.length})</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.name}>
+                    {c.name} ({c.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsClassModalOpen(true)}
+              className="h-10 px-3 bg-[#eaedff] hover:bg-[#dbe1ff] text-[#004ac6] rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 active:scale-95"
+              title="Add or Manage Classes"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Class</span>
+            </button>
+          </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
-          {(['ALL', '10-A', '10-B', '9-A', '11-Sci', '12-Sci'] as const).map(cls => (
+        {/* Quick Filter Horizontal Scroll Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+          <button
+            onClick={() => setSelectedClassFilter('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 shrink-0 ${
+              selectedClassFilter === 'ALL'
+                ? 'bg-[#004ac6] text-white shadow-xs'
+                : 'bg-[#f2f3ff] text-[#434655] hover:bg-[#eaedff]'
+            }`}
+            type="button"
+          >
+            All Classes ({students.length})
+          </button>
+
+          {classes.slice(0, 10).map(cls => (
             <button
-              key={cls}
-              onClick={() => setSelectedClassFilter(cls)}
-              className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 shrink-0 ${
-                selectedClassFilter === cls
+              key={cls.id}
+              onClick={() => setSelectedClassFilter(cls.name)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all active:scale-95 shrink-0 ${
+                selectedClassFilter === cls.name
                   ? 'bg-[#004ac6] text-white shadow-xs'
                   : 'bg-[#f2f3ff] text-[#434655] hover:bg-[#eaedff]'
               }`}
               type="button"
             >
-              {cls === 'ALL' ? 'All Sections' : `Class ${cls}`}
+              {cls.name}
             </button>
           ))}
         </div>
       </div>
 
       {/* Student Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filteredStudents.map(student => {
           const isDefaulter = student.attendancePct < institution.defaulterThreshold;
-          const totalScore = student.marks.ut2.math + student.marks.ut2.sci + student.marks.ut2.eng;
-          const scorePct = ((totalScore / 150) * 100).toFixed(1);
+          const fee = getFeeForStudent(student.id, student.classSec);
 
           return (
             <div
               key={student.id}
-              className={`bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xs border transition-all flex flex-col justify-between space-y-2.5 sm:space-y-3 hover:shadow-sm ${
-                isDefaulter ? 'border-[#ba1a1a]/40 bg-[#fffbfa]' : 'border-[#eaedff]'
-              }`}
+              className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-[#eaedff] shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <img
-                    src={student.avatarUrl}
-                    alt={student.name}
-                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl object-cover ring-2 ring-[#004ac6]/20 shadow-xs shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#131b2e] truncate">{student.name}</h4>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#eaedff] text-[#004ac6] shrink-0">
-                        #{student.rollNo}
-                      </span>
+              <div className="space-y-3">
+                {/* Header with Student Photo & Class */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative group">
+                      <img
+                        src={student.avatarUrl}
+                        alt={student.name}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-[#dae2fd] shadow-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleEditStudent(student)}
+                        className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                        title="Change Photo"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
                     </div>
-                    <span className="text-[11px] sm:text-xs text-[#737686]">{student.classSec}</span>
-                  </div>
-                </div>
 
-                <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-[#131b2e] truncate">{student.name}</h3>
+                      <div className="flex items-center gap-1.5 text-xs text-[#737686]">
+                        <span className="font-mono font-bold text-[#004ac6]">Roll #{student.rollNo}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-[#131b2e] truncate">{student.classSec}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       isDefaulter ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-[#bdffdb] text-[#002113]'
                     }`}
                   >
-                    {student.attendancePct}% Att
+                    {student.attendancePct}%
                   </span>
-                  <button
-                    onClick={() => handleEditStudent(student)}
-                    className="text-[11px] font-bold text-[#004ac6] hover:underline flex items-center gap-0.5 active:scale-95"
-                    title="Edit Student Data"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
+                </div>
+
+                {/* Parent & Financial Info */}
+                <div className="bg-[#faf8ff] p-3 rounded-2xl border border-[#dae2fd]/60 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-[#434655]">
+                    <span>Parent: <strong className="text-[#131b2e]">{student.parentName}</strong></span>
+                    <span className="text-[10px] text-[#737686]">{student.parentRelation}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#434655]">
+                    <span>WhatsApp:</span>
+                    <span className="font-mono font-bold text-[#131b2e]">{student.parentWhatsApp}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-[#dae2fd]/40">
+                    <span className="flex items-center gap-1 text-[#737686]">
+                      <Wallet className="w-3 h-3 text-[#007d55]" />
+                      Fee Due:
+                    </span>
+                    <strong className={fee.balanceDue > 0 ? 'text-[#ba1a1a]' : 'text-[#007d55]'}>
+                      {institution.currencySymbol}{fee.balanceDue.toLocaleString()} ({fee.status})
+                    </strong>
+                  </div>
                 </div>
               </div>
 
-              {/* Quick Info Strip */}
-              <div className="grid grid-cols-2 gap-2 bg-[#f2f3ff] p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-xs text-[#131b2e]">
-                <div>
-                  <span className="text-[9px] sm:text-[10px] text-[#737686] block">Guardian</span>
-                  <span className="font-semibold truncate block">{student.parentName}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] sm:text-[10px] text-[#737686] block">UT-2 Score</span>
-                  <span className="font-semibold font-mono text-[#004ac6]">
-                    {totalScore} / 150 ({scorePct}%)
-                  </span>
-                </div>
-              </div>
-
-              {/* Push Action Buttons: WhatsApp / PDF Report / Profile */}
-              <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5">
+              {/* Action Buttons Footer */}
+              <div className="pt-2 border-t border-[#eaedff] flex items-center justify-between gap-1.5">
                 <button
-                  onClick={() =>
-                    openDispatchModal({
-                      title: `Push Report Card: ${student.name}`,
-                      reportCategory: 'student-report',
-                      defaultFormat: 'pdf',
-                      defaultRecipientType: 'parent',
-                      targetStudent: student,
-                    })
-                  }
-                  className="flex-1 h-9 bg-[#007d55] hover:bg-[#006644] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
                   type="button"
+                  onClick={() => setInspectStudent(student)}
+                  className="flex-1 h-8.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span className="truncate">Push WA/PDF</span>
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Profile</span>
                 </button>
 
                 <button
+                  type="button"
+                  onClick={() => handleEditStudent(student)}
+                  className="flex-1 h-8.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#131b2e] rounded-xl text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => {
                     setActiveStudentForReport(student);
                     setActiveTab('exams');
-                    showToast(`Viewing report card for ${student.name}`);
                   }}
-                  className="h-9 px-2.5 sm:px-3 bg-[#dbe1ff] hover:bg-[#c7d2fe] text-[#004ac6] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors active:scale-95"
-                  type="button"
+                  className="flex-1 h-8.5 bg-[#004ac6] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
                 >
                   <Award className="w-3.5 h-3.5" />
                   <span>Marks</span>
                 </button>
 
                 <button
-                  onClick={() => setInspectStudent(student)}
-                  className="h-9 w-9 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#131b2e] rounded-xl flex items-center justify-center transition-colors border border-[#dae2fd] active:scale-95 shrink-0"
                   type="button"
-                  title="Full Profile"
+                  onClick={() => {
+                    if (confirm(`Permanently remove student ${student.name} (Roll #${student.rollNo})?`)) {
+                      deleteStudent(student.id);
+                      showToast(`Removed student ${student.name}`);
+                    }
+                  }}
+                  className="w-8.5 h-8.5 bg-white hover:bg-[#ffdad6] text-[#737686] hover:text-[#ba1a1a] rounded-xl border border-[#dae2fd] flex items-center justify-center transition-colors shrink-0"
+                  title="Delete Student"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -240,10 +321,12 @@ export const StudentsDirectoryView: React.FC = () => {
         })}
       </div>
 
-      {/* Student Detail View Modal */}
-      <StudentDetailModal student={inspectStudent} onClose={() => setInspectStudent(null)} />
+      {/* Modals */}
+      <StudentDetailModal
+        student={inspectStudent}
+        onClose={() => setInspectStudent(null)}
+      />
 
-      {/* Student Add / Edit / Delete Modal */}
       <StudentEditModal
         student={editingStudent}
         isOpen={isEditModalOpen}

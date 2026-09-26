@@ -19,6 +19,9 @@ import {
   UserCheck,
   Layers,
   BookmarkCheck,
+  Wallet,
+  Calendar,
+  BellRing,
 } from 'lucide-react';
 
 export const NavigationDrawer: React.FC = () => {
@@ -35,6 +38,7 @@ export const NavigationDrawer: React.FC = () => {
     setIsSubjectModalOpen,
     institution,
     openDispatchModal,
+    openFeeReminderModal,
   } = useApp();
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
@@ -42,6 +46,9 @@ export const NavigationDrawer: React.FC = () => {
     { id: 'students', label: 'Students Database', icon: <Users className="w-5 h-5" /> },
     { id: 'teachers', label: 'Faculty & Staff Roster', icon: <UserCheck className="w-5 h-5" /> },
     { id: 'attendance', label: 'Daily Attendance Ledger', icon: <CalendarCheck className="w-5 h-5" /> },
+    { id: 'fees', label: 'Student Fees & Accounts', icon: <Wallet className="w-5 h-5" />, badge: 'INR' },
+    { id: 'calendar', label: 'Academic Calendar (2026)', icon: <Calendar className="w-5 h-5" />, badge: 'Holidays' },
+    { id: 'notices', label: 'Notice Board & Broadcast', icon: <BellRing className="w-5 h-5" />, badge: '1-Click' },
     { id: 'syllabus', label: 'Curriculum & Syllabus', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'exams', label: 'Marks & Report Cards', icon: <Award className="w-5 h-5" /> },
     { id: 'sync', label: 'Google Sheets & Webhook', icon: <RefreshCw className="w-5 h-5" /> },
@@ -154,7 +161,19 @@ export const NavigationDrawer: React.FC = () => {
         </div>
 
         {/* Push Document & WhatsApp Quick Action Bar */}
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-2 space-y-1.5">
+          <button
+            onClick={() => {
+              setIsDrawerOpen(false);
+              openFeeReminderModal(undefined, 'parents');
+            }}
+            className="w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-[#ffdad6] text-[#ba1a1a] text-xs font-bold border border-[#ffdad6] active:scale-95 transition-all"
+            type="button"
+          >
+            <BellRing className="w-3.5 h-3.5 shrink-0" />
+            <span>🔔 Class Fee Reminders Popup</span>
+          </button>
+
           <button
             onClick={() => {
               setIsDrawerOpen(false);

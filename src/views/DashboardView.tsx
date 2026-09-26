@@ -18,6 +18,9 @@ import {
   AlertTriangle,
   MessageCircle,
   Eye,
+  Wallet,
+  Calendar,
+  BellRing,
 } from 'lucide-react';
 
 Chart.register(...registerables);
@@ -31,6 +34,7 @@ export const DashboardView: React.FC = () => {
     academicSession,
     setActiveTab,
     openDispatchModal,
+    openFeeReminderModal,
     userRole,
     metricsKey,
   } = useApp();
@@ -337,7 +341,7 @@ export const DashboardView: React.FC = () => {
           <span className="font-bold text-xs sm:text-sm text-[#131b2e]">Database Actions & Shortcuts</span>
           <span className="text-[11px] sm:text-xs text-[#004ac6] font-medium">Instant Synced</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
           <button
             onClick={() => setActiveTab('attendance')}
             className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#004ac6]/30"
@@ -353,6 +357,62 @@ export const DashboardView: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveTab('fees')}
+            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#007d55]/30"
+            type="button"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#bdffdb]/50 flex items-center justify-center text-[#007d55] shrink-0">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-xs font-bold text-[#131b2e] block truncate">Student Fees</span>
+              <span className="text-[10px] text-[#737686] truncate block">Dues & receipts</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => openFeeReminderModal(undefined, 'parents')}
+            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-[#ffdad6]/40 rounded-2xl shadow-xs border border-[#ffdad6] active:scale-95 transition-all hover:border-[#ba1a1a]/40"
+            type="button"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#ffdad6] flex items-center justify-center text-[#ba1a1a] shrink-0">
+              <BellRing className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-xs font-bold text-[#ba1a1a] block truncate">Fee Reminders</span>
+              <span className="text-[10px] text-[#737686] truncate block">1-Click popup</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#004ac6]/30"
+            type="button"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#dbe1ff] flex items-center justify-center text-[#004ac6] shrink-0">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-xs font-bold text-[#131b2e] block truncate">2026 Calendar</span>
+              <span className="text-[10px] text-[#737686] truncate block">Sundays & holidays</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('notices')}
+            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#007d55]/30"
+            type="button"
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#bdffdb]/50 flex items-center justify-center text-[#007d55] shrink-0">
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-xs font-bold text-[#131b2e] block truncate">Notice Board</span>
+              <span className="text-[10px] text-[#737686] truncate block">Broadcast parents</span>
+            </div>
+          </button>
+
+          <button
             onClick={() => setActiveTab('exams')}
             className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#4648d4]/30"
             type="button"
@@ -363,41 +423,6 @@ export const DashboardView: React.FC = () => {
             <div className="text-left min-w-0">
               <span className="text-xs font-bold text-[#131b2e] block truncate">Marks & Exams</span>
               <span className="text-[10px] text-[#737686] truncate block">Grades & reports</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() =>
-              openDispatchModal({
-                title: 'Export Full Database',
-                reportCategory: 'master-audit',
-                defaultFormat: 'excel',
-                defaultRecipientType: 'principal',
-              })
-            }
-            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#007d55]/30"
-            type="button"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#bdffdb]/50 flex items-center justify-center text-[#007d55] shrink-0">
-              <FileDown className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="text-left min-w-0">
-              <span className="text-xs font-bold text-[#131b2e] block truncate">Push PDF / Excel</span>
-              <span className="text-[10px] text-[#737686] truncate block">Export & send</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('branding')}
-            className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 bg-white rounded-2xl shadow-xs border border-[#eaedff] active:scale-95 transition-all hover:border-[#004ac6]/30"
-            type="button"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#dae2fd] flex items-center justify-center text-[#004ac6] shrink-0">
-              <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="text-left min-w-0">
-              <span className="text-xs font-bold text-[#131b2e] block truncate">Client Branding</span>
-              <span className="text-[10px] text-[#737686] truncate block">Custom logo & details</span>
             </div>
           </button>
         </div>

@@ -58,10 +58,11 @@ export interface Student {
   bloodGroup?: string;
   address?: string;
   marks: {
-    ut1: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
-    ut2: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
-    midTerm: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
-    finalExam?: { math: number; sci: number; eng: number; sst?: number; hindi?: number };
+    ut1?: { math: number; sci: number; eng: number; [key: string]: number | undefined };
+    ut2: { math: number; sci: number; eng: number; [key: string]: number | undefined };
+    midTerm?: { math: number; sci: number; eng: number; [key: string]: number | undefined };
+    finalExam?: { math: number; sci: number; eng: number; [key: string]: number | undefined };
+    [examKey: string]: { [subjectKey: string]: number | undefined } | undefined;
   };
 }
 
@@ -213,16 +214,116 @@ export interface DispatchModalConfig {
     | 'faculty-payslip'
     | 'syllabus-progress'
     | 'syllabus-audit'
+    | 'fee-receipt'
+    | 'fee-defaulters'
     | 'master-audit';
 }
 
 export type ActiveTab = 
   | 'dashboard' 
   | 'attendance' 
+  | 'fees'
   | 'syllabus' 
   | 'exams' 
+  | 'calendar'
+  | 'notices'
   | 'sync' 
   | 'students' 
   | 'teachers' 
   | 'branding'
   | 'settings';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  type: 'holiday' | 'sunday' | 'exam' | 'event' | 'ptm' | 'fee-due';
+  description?: string;
+  isGazetted?: boolean;
+}
+
+export interface NoticeItem {
+  id: string;
+  title: string;
+  content: string;
+  category: 'Urgent' | 'Fees' | 'Holiday' | 'Exams' | 'PTM' | 'General';
+  targetAudience: 'All Parents' | 'Class-Specific' | 'All Teachers' | 'All Students';
+  targetClass?: string;
+  priority: 'Normal' | 'High' | 'Urgent';
+  publishedAt: string;
+  publishedBy: string;
+  isPinned?: boolean;
+  broadcastSent?: boolean;
+  broadcastRecipientsCount?: number;
+}
+
+export interface CustomExam {
+  id: string;
+  name: string;
+  code: string;
+  maxMarksPerSubject: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface FeeStructure {
+  id: string;
+  className: string;
+  category: ClassLevelCategory;
+  tuitionFee: number;
+  labActivityFee: number;
+  examFee: number;
+  transportFee: number;
+  totalAnnualFee: number;
+  frequency: 'Annual' | 'Quarterly' | 'Semester';
+}
+
+export interface FeePaymentTransaction {
+  id: string;
+  receiptNo: string;
+  studentId: string;
+  studentName: string;
+  rollNo: string;
+  classSec: string;
+  amount: number;
+  paymentMode: 'Cash' | 'UPI' | 'Net Banking' | 'Cheque';
+  transactionRef: string;
+  date: string;
+  receivedBy: string;
+  note?: string;
+}
+
+export interface StudentFeeDetails {
+  studentId: string;
+  totalBilled: number;
+  totalPaid: number;
+  balanceDue: number;
+  status: 'Paid' | 'Partial' | 'Overdue';
+  lastPaymentDate?: string;
+  lastPaymentMode?: string;
+}
+
+export type TeacherLeaveType =
+  | 'Casual Leave (CL)'
+  | 'Sick Leave (SL)'
+  | 'Earned Leave (EL)'
+  | 'Half Day (HD)'
+  | 'On Duty (OD)';
+
+export interface TeacherLeaveApplication {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  teacherSubject: string;
+  leaveType: TeacherLeaveType;
+  fromDate: string;
+  toDate: string;
+  daysCount: number;
+  reason: string;
+  substituteTeacherName?: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestedAt: string;
+  reviewedBy?: string;
+  principalRemarks?: string;
+  reviewedAt?: string;
+}

@@ -26,8 +26,10 @@ export const AttendanceView: React.FC = () => {
   const {
     students,
     teachers,
+    classes,
     selectedClass,
     setSelectedClass,
+    setIsClassModalOpen,
     currentDateLabel,
     shiftDate,
     updateStudentAttendance,
@@ -40,17 +42,114 @@ export const AttendanceView: React.FC = () => {
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState<'student' | 'faculty'>('student');
+  const [selectedSection, setSelectedSection] = useState<string>('ALL');
   const [inspectStudent, setInspectStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNewStudent, setIsNewStudent] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
 
-  // Filter students by selected class
-  const classGradeKey = selectedClass.replace('Class ', '');
-  const filteredByClass = selectedClass === 'ALL' 
-    ? students 
-    : students.filter(s => s.gradeLevel === classGradeKey);
+  // Helper function to extract base class and section
+  const parseClassSec = (str: string): { base: string; section: string } => {
+    if (!str) return { base: '', section: '' };
+    const clean = str.trim();
+    // Check for dash: e.g. "Class 10-A", "1-B", "Senior KG-A", "Class 1 - B"
+    const dashMatch = clean.match(/^(.*?)\s*[-–—]\s*([A-Za-z0-9\s]+)$/);
+    if (dashMatch) {
+      return { base: dashMatch[1].trim(), section: dashMatch[2].trim().toUpperCase() };
+    }
+    // Check for parentheses: e.g. "Class 10 (A)"
+    const parenMatch = clean.match(/^(.*?)\s*\(([A-Za-z0-9\s]+)\)$/);
+    if (parenMatch) {
+      return { base: parenMatch[1].trim(), section: parenMatch[2].trim().toUpperCase() };
+    }
+    // Check for space with section suffix like "Class 11 Science" or "Class 10 B"
+    const suffixMatch = clean.match(/^(.*?)\s+([A-D]|Science|Commerce|Arts)$/i);
+    if (suffixMatch) {
+      return { base: suffixMatch[1].trim(), section: suffixMatch[2].trim().toUpperCase() };
+    }
+    return { base: clean, section: '' };
+  };
+
+  // Available sections dynamically determined by selected class and registered classes
+  const availableSections = React.useMemo(() => {
+    const secSet = new Set<string>();
+    // Default core sections
+    ['A', 'B', 'C', 'D'].forEach(s => secSet.add(s));
+
+    if (selectedClass !== 'ALL') {
+      const parsedSel = parseClassSec(selectedClass);
+      if (parsedSel.section) secSet.add(parsedSel.section);
+
+      const matchedClassObj = classes.find(c => c.name === selectedClass);
+      if (matchedClassObj?.section) secSet.add(matchedClassObj.section);
+
+      students.forEach(s => {
+        const sParsed = parseClassSec(s.classSec);
+        if (
+          sParsed.base.toLowerCase() === parsedSel.base.toLowerCase() ||
+          s.classSec.toLowerCase().startsWith(parsedSel.base.toLowerCase())
+        ) {
+          if (sParsed.section) secSet.add(sParsed.section);
+        }
+      });
+    } else {
+      classes.forEach(c => {
+        if (c.section) secSet.add(c.section);
+      });
+      ['Science', 'Commerce', 'Batch A', 'Doctoral'].forEach(s => secSet.add(s));
+    }
+    return Array.from(secSet);
+  }, [classes, selectedClass, students]);
+
+  // Filter students dynamically by selected class and section (KG to PhD)
+  const filteredByClass = React.useMemo(() => {
+    return students.filter(s => {
+      // 1. Class filter
+      if (selectedClass !== 'ALL') {
+        const selParsed = parseClassSec(selectedClass);
+        const sClassParsed = parseClassSec(s.classSec || '');
+        const sGradeParsed = parseClassSec(s.gradeLevel || '');
+
+        const targetBase = selParsed.base.toLowerCase().trim();
+        const sBase = sClassParsed.base.toLowerCase().trim();
+        const sGradeBase = sGradeParsed.base.toLowerCase().trim();
+
+        // Exact match
+        const isExactMatch =
+          s.classSec.toLowerCase().trim() === selectedClass.toLowerCase().trim() ||
+          (s.gradeLevel || '').toLowerCase().trim() === selectedClass.toLowerCase().trim();
+
+        // Base class match (handles "Class 10" matching "Class 10-A", without "Class 1" matching "Class 10")
+        const isBaseMatch =
+          sBase === targetBase ||
+          sGradeBase === targetBase ||
+          sBase.replace(/^class\s*/i, '') === targetBase.replace(/^class\s*/i, '');
+
+        if (!isExactMatch && !isBaseMatch) return false;
+      }
+
+      // 2. Section filter
+      if (selectedSection !== 'ALL') {
+        const targetSec = selectedSection.trim().toUpperCase();
+        const sClassParsed = parseClassSec(s.classSec || '');
+        const sGradeParsed = parseClassSec(s.gradeLevel || '');
+
+        const matchesParsedSec =
+          sClassParsed.section === targetSec || sGradeParsed.section === targetSec;
+
+        const rawUpper = (s.classSec || '').trim().toUpperCase();
+        const matchesSuffix =
+          rawUpper.endsWith(`-${targetSec}`) ||
+          rawUpper.endsWith(` ${targetSec}`) ||
+          rawUpper.endsWith(`(${targetSec})`);
+
+        if (!matchesParsedSec && !matchesSuffix) return false;
+      }
+
+      return true;
+    });
+  }, [students, selectedClass, selectedSection]);
 
   const displayStudents = filterDefaultersOnly
     ? filteredByClass.filter(s => s.attendancePct < institution.defaulterThreshold)
@@ -89,6 +188,18 @@ export const AttendanceView: React.FC = () => {
       targetStudent: student,
     });
   };
+
+  const activeTargetClassSec = React.useMemo(() => {
+    if (selectedClass === 'ALL') {
+      const fallback = classes[0]?.name || 'Class 10-A';
+      return selectedSection !== 'ALL' ? `Class 10-${selectedSection}` : fallback;
+    }
+    const selParsed = parseClassSec(selectedClass);
+    if (selectedSection !== 'ALL') {
+      return `${selParsed.base}-${selectedSection}`;
+    }
+    return selParsed.section ? `${selParsed.base}-${selParsed.section}` : `${selParsed.base}-A`;
+  }, [selectedClass, selectedSection, classes]);
 
   return (
     <div className="flex flex-col w-full text-left max-w-7xl mx-auto px-2 sm:px-4">
@@ -152,7 +263,7 @@ export const AttendanceView: React.FC = () => {
             <button
               onClick={() =>
                 openDispatchModal({
-                  title: `Attendance Register: ${selectedClass}`,
+                  title: `Attendance Register: ${selectedClass} (${selectedSection})`,
                   reportCategory: 'attendance-register',
                   defaultFormat: 'pdf',
                   defaultRecipientType: 'principal',
@@ -172,45 +283,94 @@ export const AttendanceView: React.FC = () => {
                 setIsNewStudent(true);
                 setIsEditModalOpen(true);
               }}
-              className="h-10 sm:h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors active:scale-95"
+              className="h-10 sm:h-9 px-3 bg-[#004ac6] hover:bg-[#2563eb] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors active:scale-95 shadow-xs"
               type="button"
+              title={`Add New Student to ${activeTargetClassSec}`}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Add Student</span>
+              <span className="truncate">+ Add Student ({activeTargetClassSec})</span>
             </button>
           </div>
         </div>
 
-        {/* Class Selector Filter Pills */}
+        {/* Dynamic Class & Section Selector Flow (KG to PhD) */}
         {activeSubTab === 'student' && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-2 px-2">
-            {(['ALL', 'Class 10-A', 'Class 10-B', 'Class 9-A', 'Class 11-Sci', 'Class 12-Sci'] as const).map(cls => {
-              const isSelected = selectedClass === cls;
-              const count = cls === 'ALL'
-                ? students.length
-                : students.filter(s => s.gradeLevel === cls.replace('Class ', '')).length;
-              return (
-                <button
-                  key={cls}
-                  onClick={() => setSelectedClass(cls)}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 active:scale-95 ${
-                    isSelected
-                      ? 'bg-[#004ac6] text-white shadow-xs'
-                      : 'text-[#434655] bg-white border border-[#dae2fd] hover:bg-[#eaedff]'
-                  }`}
-                  type="button"
-                >
-                  <span>{cls === 'ALL' ? 'All Classes' : cls}</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                      isSelected ? 'bg-[#dbe1ff] text-[#00174b]' : 'bg-[#f2f3ff] text-[#737686]'
-                    }`}
+          <div className="bg-white p-3 rounded-2xl border border-[#eaedff] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+              {/* 1. Class Dropdown (Kindergarten to PhD) */}
+              <div className="flex-1 flex items-center gap-2 bg-[#f2f3ff] p-2 rounded-xl border border-[#dae2fd]">
+                <GraduationCap className="w-4 h-4 text-[#004ac6] shrink-0" />
+                <div className="flex flex-col min-w-0 flex-1">
+                  <label className="text-[9px] font-bold uppercase text-[#737686] leading-none mb-0.5">
+                    Select Class (KG to PhD)
+                  </label>
+                  <select
+                    value={selectedClass}
+                    onChange={e => {
+                      setSelectedClass(e.target.value);
+                      setSelectedSection('ALL');
+                      showToast(`Selected class: ${e.target.value}`);
+                    }}
+                    className="bg-transparent text-xs font-bold text-[#131b2e] outline-none cursor-pointer w-full"
                   >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                    <option value="ALL">All Academic Classes (KG to PhD)</option>
+                    {classes.map(cls => (
+                      <option key={cls.id} value={cls.name}>
+                        {cls.name} {cls.section ? `• Sec ${cls.section}` : ''} ({cls.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* 2. Section Selector */}
+              <div className="w-full sm:w-48 flex items-center gap-2 bg-[#f2f3ff] p-2 rounded-xl border border-[#dae2fd]">
+                <span className="text-xs font-bold text-[#004ac6]">Sec:</span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <label className="text-[9px] font-bold uppercase text-[#737686] leading-none mb-0.5">
+                    Section Filter
+                  </label>
+                  <select
+                    value={selectedSection}
+                    onChange={e => setSelectedSection(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-[#131b2e] outline-none cursor-pointer w-full"
+                  >
+                    <option value="ALL">All Sections</option>
+                    {availableSections.map(sec => (
+                      <option key={sec} value={sec}>
+                        Section {sec}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Button: Add Student for this specific class/section */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setIsClassModalOpen(true)}
+                className="h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all"
+                type="button"
+                title="Manage or Add Classes (KG to PhD)"
+              >
+                <span>Manage Classes</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingStudent(null);
+                  setIsNewStudent(true);
+                  setIsEditModalOpen(true);
+                }}
+                className="h-9 px-3.5 bg-[#007d55] hover:bg-[#006644] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                type="button"
+                title={`Add new student directly to ${activeTargetClassSec}`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="truncate">+ Add Student to {activeTargetClassSec}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -514,6 +674,7 @@ export const AttendanceView: React.FC = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         isNew={isNewStudent}
+        defaultClassSec={activeTargetClassSec}
       />
     </div>
   );

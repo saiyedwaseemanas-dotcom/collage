@@ -10,6 +10,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { ExportDispatchModal } from './components/ExportDispatchModal';
 import { ClassManageModal } from './components/ClassManageModal';
 import { SubjectManageModal } from './components/SubjectManageModal';
+import { FeeReminderModal } from './components/FeeReminderModal';
 
 import { DashboardView } from './views/DashboardView';
 import { AttendanceView } from './views/AttendanceView';
@@ -20,6 +21,9 @@ import { StudentsDirectoryView } from './views/StudentsDirectoryView';
 import { TeachersRegisterView } from './views/TeachersRegisterView';
 import { SettingsView } from './views/SettingsView';
 import { InstitutionCustomizerView } from './views/InstitutionCustomizerView';
+import { FeesManagementView } from './views/FeesManagementView';
+import { AcademicCalendarView } from './views/AcademicCalendarView';
+import { NoticeBoardView } from './views/NoticeBoardView';
 
 const MainContent: React.FC = () => {
   const { activeTab, isApkModalOpen, setIsApkModalOpen } = useApp();
@@ -36,6 +40,9 @@ const MainContent: React.FC = () => {
       <main className="flex-1 pt-16 pb-20 w-full overflow-x-hidden">
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'attendance' && <AttendanceView />}
+        {activeTab === 'fees' && <FeesManagementView />}
+        {activeTab === 'calendar' && <AcademicCalendarView />}
+        {activeTab === 'notices' && <NoticeBoardView />}
         {activeTab === 'syllabus' && <SyllabusView />}
         {activeTab === 'exams' && <MarksView />}
         {activeTab === 'sync' && <SheetsSyncView />}
@@ -57,6 +64,7 @@ const MainContent: React.FC = () => {
       <ExportDispatchModal />
       <ClassManageModal />
       <SubjectManageModal />
+      <FeeReminderModal />
 
       {/* Offline Status */}
       <OfflineIndicator />

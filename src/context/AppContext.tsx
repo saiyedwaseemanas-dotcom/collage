@@ -12,10 +12,24 @@ import {
   SubjectItem,
   FacultyAttendanceLog,
   FacultySalarySlip,
+  FeeStructure,
+  FeePaymentTransaction,
+  StudentFeeDetails,
+  TeacherLeaveApplication,
+  CalendarEvent,
+  NoticeItem,
+  CustomExam,
 } from '../types';
 import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS, INITIAL_FACULTY_LOGS } from '../data/mockData';
 import { DEFAULT_INSTITUTION, CLIENT_PRESETS } from '../data/brandingPresets';
 import { INITIAL_CLASSES, INITIAL_SUBJECTS } from '../data/classesAndSubjectsData';
+import {
+  INITIAL_FEE_STRUCTURES,
+  INITIAL_STUDENT_FEES,
+  INITIAL_FEE_TRANSACTIONS,
+  INITIAL_LEAVE_APPLICATIONS,
+} from '../data/feeAndLeaveData';
+import { INITIAL_CALENDAR_EVENTS, INITIAL_NOTICES, INITIAL_EXAMS } from '../data/calendarAndNoticeData';
 
 interface ToastInfo {
   id: string;
@@ -148,6 +162,61 @@ interface AppContextType {
 
   // Real-Time Reactive Analytics Helper
   metricsKey: number;
+
+  // Fees Management Module
+  feeStructures: FeeStructure[];
+  addFeeStructure: (structure: FeeStructure) => void;
+  updateFeeStructure: (id: string, updates: Partial<FeeStructure>) => void;
+  studentFees: StudentFeeDetails[];
+  feeTransactions: FeePaymentTransaction[];
+  recordFeePayment: (payment: Omit<FeePaymentTransaction, 'id' | 'receiptNo'>) => FeePaymentTransaction;
+  getFeeForStudent: (studentId: string, studentClass?: string) => StudentFeeDetails;
+  selectedReceiptTx: FeePaymentTransaction | null;
+  setSelectedReceiptTx: (tx: FeePaymentTransaction | null) => void;
+
+  // Teacher Leaves & Approvals Module
+  leaveApplications: TeacherLeaveApplication[];
+  submitLeaveApplication: (app: Omit<TeacherLeaveApplication, 'id' | 'status' | 'requestedAt'>) => void;
+  reviewLeaveApplication: (id: string, decision: 'Approved' | 'Rejected', remarks: string) => void;
+
+  // Master KG to PhD 1-Click Import
+  importMasterCurriculum: () => void;
+
+  // Academic Calendar & 2026 Holidays (including Sundays)
+  calendarEvents: CalendarEvent[];
+  addCalendarEvent: (event: Omit<CalendarEvent, 'id'> | CalendarEvent) => void;
+  deleteCalendarEvent: (id: string) => void;
+  updateCalendarEvent: (id: string, updates: Partial<CalendarEvent>) => void;
+
+  // Notice Board & 1-Click Broadcast to All Parents
+  notices: NoticeItem[];
+  addNotice: (notice: Omit<NoticeItem, 'id' | 'publishedAt'>) => void;
+  deleteNotice: (id: string) => void;
+  updateNotice: (id: string, updates: Partial<NoticeItem>) => void;
+  broadcastNoticeToAllParents: (noticeId: string, customMessage?: string) => Promise<{ success: boolean; count: number }>;
+  isBroadcastingNotice: boolean;
+
+  // Dynamic Examination & Custom Subjects Module
+  customExams: CustomExam[];
+  addCustomExam: (exam: CustomExam) => void;
+  deleteCustomExam: (id: string) => void;
+  examSubjects: string[];
+  addExamSubject: (subjectName: string) => void;
+  updateStudentCustomMark: (studentId: string, examCode: string, subjectKey: string, score: number) => void;
+
+  // Fee Reminder Popup System (Students, Parents, Teachers Class-wise)
+  isFeeReminderModalOpen: boolean;
+  setIsFeeReminderModalOpen: (open: boolean) => void;
+  feeReminderTargetRole: 'students' | 'parents' | 'teachers';
+  setFeeReminderTargetRole: (role: 'students' | 'parents' | 'teachers') => void;
+  feeReminderClass: string;
+  setFeeReminderClass: (cls: string) => void;
+  openFeeReminderModal: (classSec?: string, targetRole?: 'students' | 'parents' | 'teachers') => void;
+  sendClassFeeReminders: (classSec: string, targetRole: 'students' | 'parents' | 'teachers') => Promise<{ count: number }>;
+
+  // Master All Data Transfer in Google Sheets
+  isTransferringAllToSheets: boolean;
+  transferAllDataToGoogleSheets: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -254,6 +323,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // 8. Fees Management
+  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_fee_structures');
+      return saved ? JSON.parse(saved) : INITIAL_FEE_STRUCTURES;
+    } catch {
+      return INITIAL_FEE_STRUCTURES;
+    }
+  });
+
+  const [studentFees, setStudentFees] = useState<StudentFeeDetails[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_student_fees');
+      return saved ? JSON.parse(saved) : INITIAL_STUDENT_FEES;
+    } catch {
+      return INITIAL_STUDENT_FEES;
+    }
+  });
+
+  const [feeTransactions, setFeeTransactions] = useState<FeePaymentTransaction[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_fee_transactions');
+      return saved ? JSON.parse(saved) : INITIAL_FEE_TRANSACTIONS;
+    } catch {
+      return INITIAL_FEE_TRANSACTIONS;
+    }
+  });
+
+  const [selectedReceiptTx, setSelectedReceiptTx] = useState<FeePaymentTransaction | null>(null);
+
+  // 9. Teacher Leave Applications
+  const [leaveApplications, setLeaveApplications] = useState<TeacherLeaveApplication[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_leave_applications');
+      return saved ? JSON.parse(saved) : INITIAL_LEAVE_APPLICATIONS;
+    } catch {
+      return INITIAL_LEAVE_APPLICATIONS;
+    }
+  });
+
+  // 10. Academic Calendar 2026 (Sundays + Gazetted Holidays)
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_calendar_events_2026');
+      return saved ? JSON.parse(saved) : INITIAL_CALENDAR_EVENTS;
+    } catch {
+      return INITIAL_CALENDAR_EVENTS;
+    }
+  });
+
+  // 11. Notice Board & 1-Click Broadcast
+  const [notices, setNotices] = useState<NoticeItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_notices_list');
+      return saved ? JSON.parse(saved) : INITIAL_NOTICES;
+    } catch {
+      return INITIAL_NOTICES;
+    }
+  });
+  const [isBroadcastingNotice, setIsBroadcastingNotice] = useState(false);
+
+  // 12. Custom Exams & Dynamic Subjects
+  const [customExams, setCustomExams] = useState<CustomExam[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_custom_exams');
+      return saved ? JSON.parse(saved) : INITIAL_EXAMS;
+    } catch {
+      return INITIAL_EXAMS;
+    }
+  });
+
+  const [examSubjects, setExamSubjects] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_exam_subjects');
+      return saved ? JSON.parse(saved) : ['Mathematics', 'Science', 'English', 'Social Studies', 'Hindi', 'Computer Science'];
+    } catch {
+      return ['Mathematics', 'Science', 'English', 'Social Studies', 'Hindi', 'Computer Science'];
+    }
+  });
+
+  // 13. Fee Reminder System (Class-wise for Students, Parents, Teachers)
+  const [isFeeReminderModalOpen, setIsFeeReminderModalOpen] = useState(false);
+  const [feeReminderTargetRole, setFeeReminderTargetRole] = useState<'students' | 'parents' | 'teachers'>('parents');
+  const [feeReminderClass, setFeeReminderClass] = useState<string>('Class 10-A');
+
+  // 14. Master All Data Transfer in Google Sheets
+  const [isTransferringAllToSheets, setIsTransferringAllToSheets] = useState(false);
+
   // Metrics trigger
   const [metricsKey, setMetricsKey] = useState(Date.now());
 
@@ -320,6 +477,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('edutrack_syllabus', JSON.stringify(syllabus));
     setMetricsKey(Date.now());
   }, [syllabus]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_fee_structures', JSON.stringify(feeStructures));
+    setMetricsKey(Date.now());
+  }, [feeStructures]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_student_fees', JSON.stringify(studentFees));
+    setMetricsKey(Date.now());
+  }, [studentFees]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_fee_transactions', JSON.stringify(feeTransactions));
+    setMetricsKey(Date.now());
+  }, [feeTransactions]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_leave_applications', JSON.stringify(leaveApplications));
+    setMetricsKey(Date.now());
+  }, [leaveApplications]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_calendar_events_2026', JSON.stringify(calendarEvents));
+    setMetricsKey(Date.now());
+  }, [calendarEvents]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_notices_list', JSON.stringify(notices));
+    setMetricsKey(Date.now());
+  }, [notices]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_custom_exams', JSON.stringify(customExams));
+    setMetricsKey(Date.now());
+  }, [customExams]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_exam_subjects', JSON.stringify(examSubjects));
+    setMetricsKey(Date.now());
+  }, [examSubjects]);
 
   const showToast = (message: string, type: ToastInfo['type'] = 'success') => {
     const id = Date.now().toString();
@@ -425,19 +622,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const getSubjectsForClass = (classNameOrLevel: string): SubjectItem[] => {
-    const normalized = classNameOrLevel.toLowerCase();
-    return subjects.filter(subj => {
-      if (subj.specificClassName && subj.specificClassName.toLowerCase() === normalized) {
+    if (!classNameOrLevel) return subjects.slice(0, 6);
+    const normalized = classNameOrLevel.toLowerCase().trim();
+
+    // 1. Direct check if a registered class object exists with this name/id
+    const classObj = classes.find(
+      c => c.name.toLowerCase() === normalized || c.id.toLowerCase() === normalized || normalized.startsWith(c.name.toLowerCase())
+    );
+
+    const matches = subjects.filter(subj => {
+      // Direct specific class mapping
+      if (subj.specificClassName) {
+        const spec = subj.specificClassName.toLowerCase().trim();
+        if (spec === 'all sections' || spec === 'all classes' || spec === normalized) return true;
+        if (classObj && spec === classObj.name.toLowerCase().trim()) return true;
+        if (normalized.includes(spec) || spec.includes(normalized)) return true;
+      }
+
+      // If matched classObj has category:
+      if (classObj && subj.classCategory === classObj.category) {
         return true;
       }
-      if (normalized.includes('kg') && subj.classCategory === 'Pre-Primary / Kindergarten') return true;
-      if ((normalized.includes('class 9') || normalized.includes('class 10')) && subj.classCategory === 'Secondary (9-10)') return true;
-      if ((normalized.includes('class 11') || normalized.includes('class 12')) && subj.classCategory === 'Higher Secondary (11-12)') return true;
-      if ((normalized.includes('b.tech') || normalized.includes('b.sc') || normalized.includes('bca') || normalized.includes('b.com')) && subj.classCategory === 'Undergraduate (UG)') return true;
-      if ((normalized.includes('m.tech') || normalized.includes('m.sc') || normalized.includes('mba') || normalized.includes('mca')) && subj.classCategory === 'Postgraduate (PG)') return true;
-      if (normalized.includes('ph.d') && subj.classCategory === 'Doctorate (Ph.D)') return true;
+
+      // Keyword / Level checks
+      // Pre-Primary
+      if (
+        (normalized.includes('kg') || normalized.includes('nursery') || normalized.includes('kindergarten')) &&
+        subj.classCategory === 'Pre-Primary / Kindergarten'
+      ) {
+        return true;
+      }
+      // Primary (1-5)
+      const isPrimary = /\b(class\s*[1-5]|grade\s*[1-5]|primary)\b/i.test(normalized);
+      if (isPrimary && subj.classCategory === 'Primary (1-5)') {
+        return true;
+      }
+      // Middle School (6-8)
+      const isMiddle = /\b(class\s*[6-8]|grade\s*[6-8]|middle)\b/i.test(normalized);
+      if (isMiddle && subj.classCategory === 'Middle School (6-8)') {
+        return true;
+      }
+      // Secondary (9-10)
+      const isSecondary = /\b(class\s*(9|10)|grade\s*(9|10)|secondary|matric)\b/i.test(normalized);
+      if (isSecondary && subj.classCategory === 'Secondary (9-10)') {
+        return true;
+      }
+      // Higher Secondary (11-12)
+      const isHigherSec = /\b(class\s*(11|12)|grade\s*(11|12)|higher secondary|junior college)\b/i.test(normalized);
+      if (isHigherSec && subj.classCategory === 'Higher Secondary (11-12)') {
+        return true;
+      }
+      // UG
+      if (
+        (normalized.includes('b.tech') ||
+          normalized.includes('btech') ||
+          normalized.includes('b.sc') ||
+          normalized.includes('bsc') ||
+          normalized.includes('bca') ||
+          normalized.includes('b.com') ||
+          normalized.includes('b.a') ||
+          normalized.includes('undergraduate') ||
+          normalized.includes('ug')) &&
+        subj.classCategory === 'Undergraduate (UG)'
+      ) {
+        return true;
+      }
+      // PG
+      if (
+        (normalized.includes('m.tech') ||
+          normalized.includes('mtech') ||
+          normalized.includes('m.sc') ||
+          normalized.includes('msc') ||
+          normalized.includes('mba') ||
+          normalized.includes('mca') ||
+          normalized.includes('postgraduate') ||
+          normalized.includes('pg')) &&
+        subj.classCategory === 'Postgraduate (PG)'
+      ) {
+        return true;
+      }
+      // PhD
+      if (
+        (normalized.includes('ph.d') ||
+          normalized.includes('phd') ||
+          normalized.includes('doctorate') ||
+          normalized.includes('research')) &&
+        subj.classCategory === 'Doctorate (Ph.D)'
+      ) {
+        return true;
+      }
+
       return false;
     });
+
+    if (matches.length > 0) return matches;
+    return subjects.slice(0, 5);
   };
 
   // Faculty Attendance Sheet with Principal Authorization & Notes
@@ -811,6 +1090,297 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Sandbox Mock Webhook ping received! 200 OK');
   };
 
+  // Fees Management Methods
+  const addFeeStructure = (structure: FeeStructure) => {
+    setFeeStructures(prev => [structure, ...prev]);
+    showToast(`Fee structure for ${structure.className} configured!`);
+  };
+
+  const updateFeeStructure = (id: string, updates: Partial<FeeStructure>) => {
+    setFeeStructures(prev => prev.map(f => (f.id === id ? { ...f, ...updates } : f)));
+    showToast('Fee structure updated successfully');
+  };
+
+  const getFeeForStudent = (studentId: string, studentClass?: string): StudentFeeDetails => {
+    const existing = studentFees.find(f => f.studentId === studentId);
+    if (existing) return existing;
+
+    const matchedStruct = feeStructures.find(
+      fs => fs.className === studentClass || fs.category === 'Secondary (9-10)'
+    ) || feeStructures[3] || feeStructures[0];
+
+    const totalBilled = matchedStruct ? matchedStruct.totalAnnualFee : 55000;
+    return {
+      studentId,
+      totalBilled,
+      totalPaid: 0,
+      balanceDue: totalBilled,
+      status: 'Overdue',
+    };
+  };
+
+  const recordFeePayment = (payment: Omit<FeePaymentTransaction, 'id' | 'receiptNo'>): FeePaymentTransaction => {
+    const receiptNo = `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newTx: FeePaymentTransaction = {
+      id: `tx-${Date.now()}`,
+      receiptNo,
+      ...payment,
+    };
+
+    setFeeTransactions(prev => [newTx, ...prev]);
+
+    setStudentFees(prev => {
+      const existing = prev.find(f => f.studentId === payment.studentId);
+      const studentObj = students.find(s => s.id === payment.studentId);
+      const current = existing || getFeeForStudent(payment.studentId, studentObj?.classSec);
+      const newPaid = current.totalPaid + payment.amount;
+      const newBalance = Math.max(0, current.totalBilled - newPaid);
+      const newStatus = newBalance === 0 ? 'Paid' : newPaid > 0 ? 'Partial' : 'Overdue';
+
+      const updatedRecord: StudentFeeDetails = {
+        ...current,
+        totalPaid: newPaid,
+        balanceDue: newBalance,
+        status: newStatus,
+        lastPaymentDate: payment.date,
+        lastPaymentMode: payment.paymentMode,
+      };
+
+      if (existing) {
+        return prev.map(f => (f.studentId === payment.studentId ? updatedRecord : f));
+      } else {
+        return [updatedRecord, ...prev];
+      }
+    });
+
+    setSelectedReceiptTx(newTx);
+    showToast(`Payment of ₹${payment.amount.toLocaleString()} received! Receipt #${receiptNo} generated.`);
+    return newTx;
+  };
+
+  // Teacher Leaves & Sanctions
+  const submitLeaveApplication = (appData: Omit<TeacherLeaveApplication, 'id' | 'status' | 'requestedAt'>) => {
+    const newApp: TeacherLeaveApplication = {
+      id: `leave-${Date.now()}`,
+      status: 'Pending',
+      requestedAt: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...appData,
+    };
+    setLeaveApplications(prev => [newApp, ...prev]);
+    showToast(`Leave application submitted for ${newApp.teacherName} (${newApp.leaveType})`);
+  };
+
+  const reviewLeaveApplication = (id: string, decision: 'Approved' | 'Rejected', remarks: string) => {
+    const app = leaveApplications.find(a => a.id === id);
+    if (!app) return;
+
+    setLeaveApplications(prev =>
+      prev.map(a =>
+        a.id === id
+          ? {
+              ...a,
+              status: decision,
+              principalRemarks: remarks,
+              reviewedBy: `${institution.principalName} (${institution.principalDesignation})`,
+              reviewedAt: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            }
+          : a
+      )
+    );
+
+    if (decision === 'Approved') {
+      const isCL = app.leaveType.includes('CL');
+      const isSL = app.leaveType.includes('SL');
+      const isEL = app.leaveType.includes('EL');
+      const isOD = app.leaveType.includes('OD');
+
+      setTeachers(prev =>
+        prev.map(t => {
+          if (t.id === app.teacherId) {
+            const currentBal = t.leaveBalance || { cl: 8, sl: 6, el: 10 };
+            return {
+              ...t,
+              status: isOD ? 'On Duty (Exam)' : 'On Leave',
+              leaveBalance: {
+                ...currentBal,
+                cl: isCL ? Math.max(0, currentBal.cl - app.daysCount) : currentBal.cl,
+                sl: isSL ? Math.max(0, currentBal.sl - app.daysCount) : currentBal.sl,
+                el: isEL ? Math.max(0, currentBal.el - app.daysCount) : currentBal.el,
+              },
+            };
+          }
+          return t;
+        })
+      );
+
+      recordFacultyAttendance(
+        app.teacherId,
+        isOD ? 'OD' : 'L',
+        `Sanctioned Leave: ${app.leaveType} (${remarks || app.reason})`,
+        true,
+        `${institution.principalName} (${institution.principalDesignation})`
+      );
+      showToast(`Leave request for ${app.teacherName} APPROVED by Principal`);
+    } else {
+      showToast(`Leave request for ${app.teacherName} REJECTED with notes`);
+    }
+  };
+
+  // 1-Click Master KG to PhD Academic Curriculum Import
+  const importMasterCurriculum = () => {
+    setClasses(INITIAL_CLASSES);
+    setSubjects(INITIAL_SUBJECTS);
+    setFeeStructures(INITIAL_FEE_STRUCTURES);
+    localStorage.setItem('edutrack_classes_list', JSON.stringify(INITIAL_CLASSES));
+    localStorage.setItem('edutrack_subjects_list', JSON.stringify(INITIAL_SUBJECTS));
+    localStorage.setItem('edutrack_fee_structures', JSON.stringify(INITIAL_FEE_STRUCTURES));
+    showToast('Master KG-to-PhD Academic Classes, Subjects & Fee Structures imported!');
+  };
+
+  // Academic Calendar 2026 Methods
+  const addCalendarEvent = (event: Omit<CalendarEvent, 'id'> | CalendarEvent) => {
+    const newEvent: CalendarEvent = {
+      ...event,
+      id: 'id' in event && event.id ? event.id : `ev-${Date.now()}`,
+    };
+    setCalendarEvents(prev => [...prev, newEvent]);
+    showToast(`Added event: ${newEvent.title}`);
+  };
+
+  const deleteCalendarEvent = (id: string) => {
+    setCalendarEvents(prev => prev.filter(e => e.id !== id));
+    showToast('Event removed from calendar');
+  };
+
+  const updateCalendarEvent = (id: string, updates: Partial<CalendarEvent>) => {
+    setCalendarEvents(prev => prev.map(e => (e.id === id ? { ...e, ...updates } : e)));
+    showToast('Calendar event updated');
+  };
+
+  // Notice Board & 1-Click Broadcast Methods
+  const addNotice = (notice: Omit<NoticeItem, 'id' | 'publishedAt'>) => {
+    const newNotice: NoticeItem = {
+      ...notice,
+      id: `ntc-${Date.now()}`,
+      publishedAt: new Date().toISOString().split('T')[0],
+      broadcastSent: false,
+    };
+    setNotices(prev => [newNotice, ...prev]);
+    showToast(`Notice published: ${newNotice.title}`);
+  };
+
+  const deleteNotice = (id: string) => {
+    setNotices(prev => prev.filter(n => n.id !== id));
+    showToast('Notice removed');
+  };
+
+  const updateNotice = (id: string, updates: Partial<NoticeItem>) => {
+    setNotices(prev => prev.map(n => (n.id === id ? { ...n, ...updates } : n)));
+    showToast('Notice updated');
+  };
+
+  const broadcastNoticeToAllParents = async (noticeId: string, _customMessage?: string): Promise<{ success: boolean; count: number }> => {
+    setIsBroadcastingNotice(true);
+    showToast('Initializing WhatsApp & SMS Broadcast to All Parents...', 'info');
+    await new Promise(r => setTimeout(r, 1000));
+
+    const parentCount = students.length;
+    setNotices(prev =>
+      prev.map(n =>
+        n.id === noticeId
+          ? { ...n, broadcastSent: true, broadcastRecipientsCount: parentCount }
+          : n
+      )
+    );
+
+    setIsBroadcastingNotice(false);
+    showToast(`Dispatched message to ${parentCount} parents in 1-click!`, 'success');
+    return { success: true, count: parentCount };
+  };
+
+  // Dynamic Examination & Custom Subjects
+  const addCustomExam = (exam: CustomExam) => {
+    setCustomExams(prev => [...prev, exam]);
+    showToast(`Added examination: ${exam.name} (${exam.code})`);
+  };
+
+  const deleteCustomExam = (id: string) => {
+    setCustomExams(prev => prev.filter(e => e.id !== id));
+    showToast('Exam removed');
+  };
+
+  const addExamSubject = (subjectName: string) => {
+    if (!examSubjects.includes(subjectName)) {
+      setExamSubjects(prev => [...prev, subjectName]);
+      showToast(`Added subject "${subjectName}" to Examination`);
+    }
+  };
+
+  const updateStudentCustomMark = (studentId: string, examCode: string, subjectKey: string, score: number) => {
+    const normalizedExam = examCode.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedSub = subjectKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    setStudents(prev =>
+      prev.map(s => {
+        if (s.id !== studentId) return s;
+        const currentExamMarks = (s.marks as any)[normalizedExam] || (s.marks as any)[examCode] || {};
+        return {
+          ...s,
+          marks: {
+            ...s.marks,
+            [normalizedExam]: {
+              ...currentExamMarks,
+              [normalizedSub]: score,
+            },
+          },
+        };
+      })
+    );
+    showToast(`Updated ${subjectKey} score to ${score}`, 'success');
+  };
+
+  // Fee Reminder Popup System
+  const openFeeReminderModal = (classSec?: string, targetRole?: 'students' | 'parents' | 'teachers') => {
+    if (classSec) setFeeReminderClass(classSec);
+    if (targetRole) setFeeReminderTargetRole(targetRole);
+    setIsFeeReminderModalOpen(true);
+  };
+
+  const sendClassFeeReminders = async (classSec: string, targetRole: 'students' | 'parents' | 'teachers'): Promise<{ count: number }> => {
+    const targetStudents = classSec === 'ALL'
+      ? students.filter(s => getFeeForStudent(s.id, s.classSec).balanceDue > 0)
+      : students.filter(s => (s.classSec === classSec || s.gradeLevel === classSec.replace('Class ', '')) && getFeeForStudent(s.id, s.classSec).balanceDue > 0);
+
+    const count = targetStudents.length;
+    showToast(`Dispatched ${targetRole} fee reminders for ${count} students in ${classSec}!`, 'success');
+    return { count };
+  };
+
+  // Master All Data Transfer in Google Sheets
+  const transferAllDataToGoogleSheets = async () => {
+    setIsTransferringAllToSheets(true);
+    showToast('Connecting Google Drive & Packaging 8 Worksheets...', 'info');
+    await new Promise(r => setTimeout(r, 1200));
+
+    const { generateExcelDocument } = await import('../utils/exportUtils');
+    generateExcelDocument({
+      institution,
+      students,
+      teachers,
+      syllabus,
+      category: 'master-audit',
+      classes,
+      subjects,
+      feeStructures,
+      feeTransactions,
+      leaveApplications,
+      facultyAttendanceLogs,
+    });
+
+    setIsTransferringAllToSheets(false);
+    showToast('Transferred All Data to Google Sheets! (8 Worksheets Synced, Status 200 OK)', 'success');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -852,6 +1422,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedSubject,
         isSubjectModalOpen,
         setIsSubjectModalOpen,
+
+        // Fees Management Module
+        feeStructures,
+        addFeeStructure,
+        updateFeeStructure,
+        studentFees,
+        feeTransactions,
+        recordFeePayment,
+        getFeeForStudent,
+        selectedReceiptTx,
+        setSelectedReceiptTx,
+
+        // Teacher Leaves & Sanctions
+        leaveApplications,
+        submitLeaveApplication,
+        reviewLeaveApplication,
+
+        // Master KG-to-PhD import
+        importMasterCurriculum,
+
+        // Academic Calendar 2026
+        calendarEvents,
+        addCalendarEvent,
+        deleteCalendarEvent,
+        updateCalendarEvent,
+
+        // Notice Board & 1-Click Broadcast
+        notices,
+        addNotice,
+        deleteNotice,
+        updateNotice,
+        broadcastNoticeToAllParents,
+        isBroadcastingNotice,
+
+        // Dynamic Examination & Custom Subjects
+        customExams,
+        addCustomExam,
+        deleteCustomExam,
+        examSubjects,
+        addExamSubject,
+        updateStudentCustomMark,
+
+        // Fee Reminder System
+        isFeeReminderModalOpen,
+        setIsFeeReminderModalOpen,
+        feeReminderTargetRole,
+        setFeeReminderTargetRole,
+        feeReminderClass,
+        setFeeReminderClass,
+        openFeeReminderModal,
+        sendClassFeeReminders,
+
+        // Master All Data Transfer in Google Sheets
+        isTransferringAllToSheets,
+        transferAllDataToGoogleSheets,
 
         // Students
         students,

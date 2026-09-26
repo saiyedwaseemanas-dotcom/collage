@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
+  generateExcelDocument,
+  generateCsvDocument,
+  generatePdfDocument,
+} from '../utils/exportUtils';
+import {
   Table,
   Clock,
   RefreshCw,
@@ -21,6 +26,14 @@ import {
   Terminal,
   Send,
   FolderUp,
+  Download,
+  CheckCircle2,
+  Wallet,
+  Users,
+  BookOpen,
+  Layers,
+  CalendarCheck,
+  UserCheck,
 } from 'lucide-react';
 
 export const SheetsSyncView: React.FC = () => {
@@ -40,6 +53,21 @@ export const SheetsSyncView: React.FC = () => {
     webhookLogs,
     fireMockWebhook,
     showToast,
+    students,
+    teachers,
+    syllabus,
+    institution,
+    classes,
+    subjects,
+    feeStructures,
+    feeTransactions,
+    leaveApplications,
+    facultyAttendanceLogs,
+    openDispatchModal,
+    calendarEvents,
+    notices,
+    isTransferringAllToSheets,
+    transferAllDataToGoogleSheets,
   } = useApp();
 
   const [activeSyncTab, setActiveSyncTab] = useState<'import' | 'export'>('import');
@@ -91,6 +119,76 @@ export const SheetsSyncView: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* MASTER ALL DATA TRANSFER IN GOOGLE SHEET HERO CARD */}
+      <section className="bg-gradient-to-r from-[#004ac6] via-[#1e3a8a] to-[#002113] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md relative overflow-hidden space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+              <Table className="w-6 h-6 text-[#bdffdb]" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#bdffdb] block">
+                1-Click Cloud Synchronization
+              </span>
+              <h3 className="text-base sm:text-lg font-bold">
+                Transfer All Data into Google Sheets
+              </h3>
+              <p className="text-xs text-white/80 mt-0.5">
+                Pushes 8 full worksheets (Students, Attendance, Fees Ledger, Examination Marks, Classes, Faculty Roster, Academic Calendar & Notices).
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              type="button"
+              disabled={isTransferringAllToSheets}
+              onClick={transferAllDataToGoogleSheets}
+              className="w-full md:w-auto h-10 px-5 bg-[#007d55] hover:bg-[#006042] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all disabled:opacity-50"
+            >
+              <CloudUpload className={`w-4 h-4 ${isTransferringAllToSheets ? 'animate-spin' : ''}`} />
+              <span>{isTransferringAllToSheets ? 'Synchronizing 8 Worksheets...' : '⚡ Transfer All Data Now'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 8 Module Sync Badges */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/15 text-[11px]">
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Students ({students.length})</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Attendance Logs</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Fees & Defaulters</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Marks & Report Cards</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Classes ({classes.length})</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Faculty Roster</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>2026 Calendar & Sundays</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-white/90 bg-white/10 px-2.5 py-1 rounded-xl">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bdffdb]" />
+            <span>Parent Notices ({notices.length})</span>
+          </div>
+        </div>
+      </section>
 
       {/* Master Google Sheet Connected Card */}
       <section className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-xs border border-[#eaedff] relative overflow-hidden space-y-2.5 sm:space-y-3">
@@ -429,6 +527,342 @@ export const SheetsSyncView: React.FC = () => {
             </button>
           </div>
         )}
+      </section>
+
+      {/* DIRECT ONE-CLICK EXPORTS (GOOGLE SHEETS, EXCEL & PDF) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-xs border border-[#eaedff] space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#eaedff] pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Download className="w-5 h-5 text-[#004ac6]" />
+              <h3 className="text-sm sm:text-base font-bold text-[#131b2e]">
+                Direct One-Click Multi-Format Exports
+              </h3>
+            </div>
+            <p className="text-[11px] sm:text-xs text-[#737686] mt-0.5">
+              Instantly generate & download official Excel workbooks, Google Sheets CSV files, and authenticated PDF reports.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#007d55] bg-[#bdffdb] px-2.5 py-1 rounded-full shrink-0">
+            Real-Time Master Data
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          {/* Export Card 1: Class & Subject List (KG to PhD) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#faf8ff] border border-[#dae2fd] flex flex-col justify-between space-y-3 shadow-xs">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#dbe1ff] text-[#004ac6] flex items-center gap-1">
+                  <Layers className="w-3 h-3" />
+                  Curriculum Hierarchy
+                </span>
+                <span className="text-[10px] font-mono text-[#737686]">
+                  {classes.length} Classes • {subjects.length} Subjects
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-[#131b2e]">Class & Subject List (KG to PhD)</h4>
+              <p className="text-[11px] text-[#737686] leading-relaxed">
+                Full academic tier matrix spanning Pre-Primary / Kindergarten, Primary, Middle, Secondary, Senior Sec, UG, PG & PhD specializations.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#dae2fd]/60">
+              <button
+                onClick={() => {
+                  const file = generateExcelDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'syllabus-audit',
+                    classes,
+                    subjects,
+                  });
+                  showToast(`Downloaded Excel: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#007d55] hover:text-white text-[#007d55] border border-[#007d55]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+                title="Export Class & Subject List to Excel"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generateCsvDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'syllabus-audit',
+                    classes,
+                    subjects,
+                  });
+                  showToast(`Downloaded CSV: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#004ac6] hover:text-white text-[#004ac6] border border-[#004ac6]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+                title="Export to Google Sheets CSV"
+              >
+                <CloudDownload className="w-3.5 h-3.5" />
+                <span>Sheets</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generatePdfDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'syllabus-audit',
+                    classes,
+                    subjects,
+                  });
+                  showToast(`Downloaded PDF: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] border border-[#ba1a1a]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+                title="Export to Official PDF Document"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Export Card 2: Student Attendance Register */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#faf8ff] border border-[#dae2fd] flex flex-col justify-between space-y-3 shadow-xs">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#bdffdb] text-[#002113] flex items-center gap-1">
+                  <CalendarCheck className="w-3 h-3 text-[#007d55]" />
+                  Attendance Ledger
+                </span>
+                <span className="text-[10px] font-mono text-[#737686]">
+                  {students.length} Student Roster
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-[#131b2e]">Student Attendance Register</h4>
+              <p className="text-[11px] text-[#737686] leading-relaxed">
+                Daily attendance logs, present/absent counts, working days ratios, parent WhatsApp phone numbers & defaulter flags.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#dae2fd]/60">
+              <button
+                onClick={() => {
+                  const file = generateExcelDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'attendance-register',
+                    classes,
+                  });
+                  showToast(`Downloaded Attendance Excel: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#007d55] hover:text-white text-[#007d55] border border-[#007d55]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generateCsvDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'attendance-register',
+                  });
+                  showToast(`Downloaded Attendance CSV: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#004ac6] hover:text-white text-[#004ac6] border border-[#004ac6]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <CloudDownload className="w-3.5 h-3.5" />
+                <span>Sheets</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generatePdfDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'attendance-register',
+                  });
+                  showToast(`Downloaded Attendance PDF: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] border border-[#ba1a1a]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Export Card 3: Fees Ledger & Defaulter List */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#faf8ff] border border-[#dae2fd] flex flex-col justify-between space-y-3 shadow-xs">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ffdad6] text-[#93000a] flex items-center gap-1">
+                  <Wallet className="w-3 h-3 text-[#ba1a1a]" />
+                  Finance & Accounts
+                </span>
+                <span className="text-[10px] font-mono text-[#ba1a1a] font-bold">
+                  {students.filter(s => s.attendancePct < 75).length} Defaulters
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-[#131b2e]">Fees Ledger & Defaulter List</h4>
+              <p className="text-[11px] text-[#737686] leading-relaxed">
+                Class-wise annual fee structures, total billed vs collected installments, overdue balances & payment breakdown.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#dae2fd]/60">
+              <button
+                onClick={() => {
+                  const file = generateExcelDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'fee-defaulters',
+                    feeStructures,
+                    feeTransactions,
+                  });
+                  showToast(`Downloaded Fees Ledger: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#007d55] hover:text-white text-[#007d55] border border-[#007d55]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generateCsvDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'fee-defaulters',
+                  });
+                  showToast(`Downloaded Fees CSV: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#004ac6] hover:text-white text-[#004ac6] border border-[#004ac6]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <CloudDownload className="w-3.5 h-3.5" />
+                <span>Sheets</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generatePdfDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'fee-defaulters',
+                  });
+                  showToast(`Downloaded Fees Audit PDF: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] border border-[#ba1a1a]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>PDF</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Export Card 4: Faculty Attendance & Leave Roster */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#faf8ff] border border-[#dae2fd] flex flex-col justify-between space-y-3 shadow-xs">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e1e0ff] text-[#4648d4] flex items-center gap-1">
+                  <UserCheck className="w-3 h-3 text-[#004ac6]" />
+                  Faculty HR
+                </span>
+                <span className="text-[10px] font-mono text-[#737686]">
+                  {teachers.length} Faculty Members
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-[#131b2e]">Faculty Attendance & Leave Roster</h4>
+              <p className="text-[11px] text-[#737686] leading-relaxed">
+                Biometric check-in/out timestamps, CL/SL/EL leave balances, approved leave logs with Principal authorization notes.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#dae2fd]/60">
+              <button
+                onClick={() => {
+                  const file = generateExcelDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'faculty-summary',
+                    leaveApplications,
+                    facultyAttendanceLogs,
+                  });
+                  showToast(`Downloaded Faculty Excel: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#007d55] hover:text-white text-[#007d55] border border-[#007d55]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Excel</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generateCsvDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'faculty-summary',
+                  });
+                  showToast(`Downloaded Faculty CSV: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#004ac6] hover:text-white text-[#004ac6] border border-[#004ac6]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <CloudDownload className="w-3.5 h-3.5" />
+                <span>Sheets</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const file = generatePdfDocument({
+                    institution,
+                    students,
+                    teachers,
+                    syllabus,
+                    category: 'faculty-summary',
+                  });
+                  showToast(`Downloaded Faculty PDF: ${file}`);
+                }}
+                className="h-8.5 px-2 bg-white hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] border border-[#ba1a1a]/30 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all"
+                type="button"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Unified Reports Hub */}

@@ -30,6 +30,7 @@ export const SubjectManageModal: React.FC = () => {
     updateSubject,
     deleteSubject,
     classes,
+    selectedClass,
     selectedSubject,
     setSelectedSubject,
     isSubjectModalOpen,
@@ -53,16 +54,30 @@ export const SubjectManageModal: React.FC = () => {
     teacherName: '',
   });
 
+  // Sync default target class when modal opens
+  React.useEffect(() => {
+    if (isSubjectModalOpen && !editingSubject) {
+      const activeClassObj = classes.find(c => c.name === selectedClass);
+      setFormData(prev => ({
+        ...prev,
+        classCategory: activeClassObj?.category || prev.classCategory || 'Secondary (9-10)',
+        specificClassName: selectedClass !== 'ALL' ? selectedClass : (classes[0]?.name || 'All Sections'),
+        teacherName: prev.teacherName || teachers[0]?.name || 'Subject Faculty',
+      }));
+    }
+  }, [isSubjectModalOpen, editingSubject, selectedClass, classes, teachers]);
+
   if (!isSubjectModalOpen) return null;
 
   const handleStartAdd = () => {
     setEditingSubject(null);
     setIsAddingNew(true);
+    const activeClassObj = classes.find(c => c.name === selectedClass);
     setFormData({
       name: '',
       code: `SUB-${Math.floor(100 + Math.random() * 900)}`,
-      classCategory: 'Pre-Primary / Kindergarten',
-      specificClassName: 'Senior KG',
+      classCategory: activeClassObj?.category || 'Pre-Primary / Kindergarten',
+      specificClassName: selectedClass !== 'ALL' ? selectedClass : (classes[0]?.name || 'Senior KG'),
       creditHours: 4,
       maxMarks: 50,
       passMarks: 18,
@@ -89,19 +104,24 @@ export const SubjectManageModal: React.FC = () => {
         name: formData.name,
         code: formData.code || `SUB-${Date.now().toString().slice(-4)}`,
         classCategory: (formData.classCategory as ClassLevelCategory) || 'Secondary (9-10)',
-        specificClassName: formData.specificClassName || 'All Sections',
+        specificClassName: formData.specificClassName || (selectedClass !== 'ALL' ? selectedClass : 'All Sections'),
         creditHours: formData.creditHours || 4,
         maxMarks: formData.maxMarks || 50,
         passMarks: formData.passMarks || 18,
         teacherName: formData.teacherName || 'Subject Coordinator',
       };
       addSubject(newSubj);
+      setSelectedSubject(newSubj.name);
+      showToast(`Subject "${newSubj.name}" mapped to ${newSubj.specificClassName}!`);
     } else if (editingSubject) {
       updateSubject(editingSubject.id, formData);
+      if (formData.name) setSelectedSubject(formData.name);
+      showToast(`Subject "${formData.name || editingSubject.name}" updated successfully`);
     }
 
     setIsAddingNew(false);
     setEditingSubject(null);
+    setIsSubjectModalOpen(false);
   };
 
   const handleDelete = (id: string, name: string) => {
