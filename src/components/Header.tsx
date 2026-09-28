@@ -38,15 +38,15 @@ export const Header: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
-    { id: '1', title: 'Live Class Started', desc: 'Dr. Sharma started Science live lecture for Class 10-A', time: '5m ago', unread: true },
-    { id: '2', title: 'Attendance Auto-Marked', desc: '28 students checked in via Live join & QR scan', time: '15m ago', unread: true },
+    { id: '1', title: 'Curriculum Updated', desc: 'Dr. Sharma updated Science syllabus for Class 10-A', time: '5m ago', unread: true },
+    { id: '2', title: 'Attendance Auto-Marked', desc: '28 students checked in via register & QR scan', time: '15m ago', unread: true },
     { id: '3', title: 'Google Sheets Synced', desc: 'All student marks & fee ledger updated live', time: '1h ago', unread: false },
   ];
 
   const rolesList: { role: UserRole; label: string; desc: string; icon: React.ReactNode }[] = [
     { role: 'Super Admin', label: 'Super Admin', desc: 'Full institutional control', icon: <SlidersHorizontal className="w-3.5 h-3.5 text-[#004ac6]" /> },
-    { role: 'Teacher / Faculty', label: 'Teacher / Faculty', desc: 'Live classes & attendance', icon: <UserCheck className="w-3.5 h-3.5 text-[#007d55]" /> },
-    { role: 'Student', label: 'Student Portal', desc: 'Join classes & view marks', icon: <GraduationCap className="w-3.5 h-3.5 text-[#b78103]" /> },
+    { role: 'Teacher / Faculty', label: 'Teacher / Faculty', desc: 'Curriculum & attendance', icon: <UserCheck className="w-3.5 h-3.5 text-[#007d55]" /> },
+    { role: 'Student', label: 'Student Portal', desc: 'View grades & notices', icon: <GraduationCap className="w-3.5 h-3.5 text-[#b78103]" /> },
     { role: 'Parent', label: 'Parent Portal', desc: 'Fee payments & performance', icon: <Users className="w-3.5 h-3.5 text-[#ba1a1a]" /> },
   ];
 

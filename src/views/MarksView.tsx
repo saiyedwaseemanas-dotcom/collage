@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Student } from '../types';
+import { CameraCaptureModal } from '../components/CameraCaptureModal';
 import {
   Award,
   Send,
@@ -34,7 +35,31 @@ import {
   UserPlus,
   Ban,
   AlertCircle,
+  Calendar,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Camera,
+  Upload,
+  RefreshCw,
 } from 'lucide-react';
+
+const STUDENT_AVATAR_PRESETS = [
+  'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
+];
+
+const REMARK_PRESETS = [
+  'Exemplary student! Consistently demonstrates exceptional discipline and academic rigor.',
+  'Shows strong analytical reasoning, leadership, and proactive classroom participation.',
+  'Hardworking and diligent. Shows steady, commendable progress across all subjects.',
+  'Polite, respectful, and attentive. Active participant in scholastic and sports activities.',
+];
 
 export const MarksView: React.FC = () => {
   const {
@@ -60,6 +85,12 @@ export const MarksView: React.FC = () => {
     setActiveTab,
     removeStudentFromExam,
     restoreStudentToExam,
+    addStudent,
+    updateStudent,
+    academicSessions,
+    activeAcademicYear,
+    setActiveAcademicYear,
+    setIsAcademicSessionModalOpen,
   } = useApp();
 
   const [activeSubView, setActiveSubView] = useState<'marksheet' | 'analytics' | 'report'>('marksheet');
@@ -74,6 +105,32 @@ export const MarksView: React.FC = () => {
 
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
+
+  // Report Card Session & Student Options State
+  const [searchStudentTerm, setSearchStudentTerm] = useState('');
+  const [reportClassFilter, setReportClassFilter] = useState('ALL');
+  const [customRemarksMap, setCustomRemarksMap] = useState<{ [id: string]: string }>({});
+
+  // Add Student in Examination / Report Card Modal State
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isAddStudentCameraOpen, setIsAddStudentCameraOpen] = useState(false);
+  const [newStudentSession, setNewStudentSession] = useState(activeAcademicYear);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentRoll, setNewStudentRoll] = useState('');
+  const [newStudentClass, setNewStudentClass] = useState(selectedClass !== 'ALL' ? selectedClass : (classes[0]?.name || 'Class 10-A'));
+  const [newParentName, setNewParentName] = useState('');
+  const [newParentPhone, setNewParentPhone] = useState('');
+  const [newParentWhatsApp, setNewParentWhatsApp] = useState('');
+  const [newStudentAvatar, setNewStudentAvatar] = useState(STUDENT_AVATAR_PRESETS[0]);
+  const [newStudentAttendance, setNewStudentAttendance] = useState(96);
+  const [newStudentRemarks, setNewStudentRemarks] = useState(REMARK_PRESETS[0]);
+  const [newStudentInitialMarks, setNewStudentInitialMarks] = useState<{ [subjectKey: string]: number }>({});
+
+  // Edit Student Modal State
+  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
+  const [isEditStudentCameraOpen, setIsEditStudentCameraOpen] = useState(false);
+  const [editStudentData, setEditStudentData] = useState<Partial<Student>>({});
+  const [editStudentRemark, setEditStudentRemark] = useState('');
 
   // Editing marks buffer for current view
   const [editedMarksBuffer, setEditedMarksBuffer] = useState<{ [key: string]: number }>({});
@@ -207,7 +264,31 @@ export const MarksView: React.FC = () => {
   const activeCount = studentStats.filter(s => !s.isExcluded).length;
   const excludedCount = studentStats.filter(s => s.isExcluded).length;
 
-  const reportTargetStudent = activeStudentForReport || topper?.student || students[0];
+  // Filtered students for Report Card session (supporting Class filter & live Search)
+  const reportFilteredStudents = useMemo(() => {
+    let list = students;
+    if (reportClassFilter !== 'ALL') {
+      const targetGrade = reportClassFilter.replace(/^class\s*/i, '').trim().toLowerCase();
+      list = list.filter(s => {
+        const sGrade = s.gradeLevel ? s.gradeLevel.toLowerCase() : '';
+        const sClass = s.classSec ? s.classSec.toLowerCase() : '';
+        return sGrade === targetGrade || sClass === reportClassFilter.toLowerCase() || sClass.includes(targetGrade);
+      });
+    }
+    if (searchStudentTerm.trim()) {
+      const q = searchStudentTerm.trim().toLowerCase();
+      list = list.filter(s => s.name.toLowerCase().includes(q) || s.rollNo.toLowerCase().includes(q));
+    }
+    return list;
+  }, [students, reportClassFilter, searchStudentTerm]);
+
+  const reportTargetStudent = useMemo(() => {
+    if (activeStudentForReport && reportFilteredStudents.some(s => s.id === activeStudentForReport.id)) {
+      return activeStudentForReport;
+    }
+    return reportFilteredStudents[0] || students[0];
+  }, [activeStudentForReport, reportFilteredStudents, students]);
+
   const reportStats = (reportTargetStudent && studentStats.find(s => s.student.id === reportTargetStudent.id)) || {
     student: reportTargetStudent,
     total: 240,
@@ -216,6 +297,19 @@ export const MarksView: React.FC = () => {
     gradeBadgeClass: 'bg-[#dbe1ff] text-[#00174b]',
   };
   const reportRank = reportTargetStudent ? (rankMap.get(reportTargetStudent.id) || 1) : 1;
+
+  // Previous & Next navigation across reportFilteredStudents
+  const currentStudentIdx = reportFilteredStudents.findIndex(s => s.id === reportTargetStudent?.id);
+  const handlePrevStudent = () => {
+    if (reportFilteredStudents.length <= 1) return;
+    const newIdx = currentStudentIdx <= 0 ? reportFilteredStudents.length - 1 : currentStudentIdx - 1;
+    setActiveStudentForReport(reportFilteredStudents[newIdx]);
+  };
+  const handleNextStudent = () => {
+    if (reportFilteredStudents.length <= 1) return;
+    const newIdx = currentStudentIdx >= reportFilteredStudents.length - 1 ? 0 : currentStudentIdx + 1;
+    setActiveStudentForReport(reportFilteredStudents[newIdx]);
+  };
 
   const handleScoreChange = (studentId: string, subjectName: string, value: string) => {
     const num = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
@@ -266,16 +360,142 @@ export const MarksView: React.FC = () => {
     setNewSubjectName('');
   };
 
+  const handleOpenAddStudentModal = () => {
+    setNewStudentName('');
+    setNewStudentRoll(`DPS-${Math.floor(1000 + Math.random() * 9000)}`);
+    setNewStudentClass(selectedClass !== 'ALL' ? selectedClass : (classes[0]?.name || 'Class 10-A'));
+    setNewStudentSession(activeAcademicYear);
+    setNewStudentAvatar(STUDENT_AVATAR_PRESETS[Math.floor(Math.random() * STUDENT_AVATAR_PRESETS.length)]);
+    setNewStudentAttendance(96);
+    setNewStudentRemarks(REMARK_PRESETS[0]);
+    setNewParentName('');
+    setNewParentPhone('');
+    setNewParentWhatsApp('');
+    const marksObj: { [subjectKey: string]: number } = {};
+    examSubjects.forEach((sub, idx) => {
+      const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+      marksObj[subKey] = 40 + (idx % 8);
+    });
+    setNewStudentInitialMarks(marksObj);
+    setIsAddStudentModalOpen(true);
+  };
+
+  const handleSaveNewStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStudentName.trim() || !newStudentRoll.trim()) {
+      showToast('Please provide student name and roll number', 'warning');
+      return;
+    }
+
+    const targetClassClean = newStudentClass;
+    const targetGradeClean = targetClassClean.replace(/^Class\s*/i, '');
+    const newStudentId = `std-${Date.now()}`;
+
+    // Dynamic marks for all active subjects
+    const dynamicExamMarks: { [key: string]: number } = {};
+    examSubjects.forEach(sub => {
+      const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+      dynamicExamMarks[subKey] = newStudentInitialMarks[subKey] !== undefined ? newStudentInitialMarks[subKey] : 42;
+    });
+
+    const newStudentObj: Student = {
+      id: newStudentId,
+      name: newStudentName.trim(),
+      rollNo: newStudentRoll.trim(),
+      classSec: targetClassClean,
+      gradeLevel: targetGradeClean,
+      parentName: newParentName.trim() || 'Parent/Guardian',
+      parentRelation: 'Father',
+      parentPhone: newParentPhone.trim() || '9876543210',
+      parentWhatsApp: newParentWhatsApp.trim() || newParentPhone.trim() || '9876543210',
+      attendancePct: newStudentAttendance,
+      totalPresent: Math.round((newStudentAttendance / 100) * 25),
+      totalWorkingDays: 25,
+      todayStatus: 'P',
+      avatarUrl: newStudentAvatar || STUDENT_AVATAR_PRESETS[0],
+      academicYear: newStudentSession || activeAcademicYear,
+      marks: {
+        ut1: { math: 42, sci: 44, eng: 45 },
+        ut2: { math: 44, sci: 46, eng: 45 },
+        [examKey]: dynamicExamMarks,
+      },
+    };
+
+    addStudent(newStudentObj);
+    if (newStudentRemarks.trim()) {
+      setCustomRemarksMap(prev => ({ ...prev, [newStudentId]: newStudentRemarks.trim() }));
+    }
+    setActiveStudentForReport(newStudentObj);
+    if (selectedClass !== 'ALL' && selectedClass !== targetClassClean) {
+      setSelectedClass(targetClassClean);
+    }
+    setActiveSubView('report');
+    setIsAddStudentModalOpen(false);
+    showToast(`Enrolled ${newStudentName} into ${targetClassClean} (${newStudentSession}) & generated Report Card!`, 'success');
+  };
+
+  // Open Edit Student Modal
+  const handleOpenEditStudentModal = () => {
+    if (!reportTargetStudent) return;
+    setEditStudentData({
+      name: reportTargetStudent.name,
+      rollNo: reportTargetStudent.rollNo,
+      classSec: reportTargetStudent.classSec,
+      gradeLevel: reportTargetStudent.gradeLevel,
+      parentName: reportTargetStudent.parentName,
+      parentPhone: reportTargetStudent.parentPhone,
+      parentWhatsApp: reportTargetStudent.parentWhatsApp,
+      attendancePct: reportTargetStudent.attendancePct,
+      avatarUrl: reportTargetStudent.avatarUrl,
+      academicYear: reportTargetStudent.academicYear || activeAcademicYear,
+    });
+    setEditStudentRemark(
+      customRemarksMap[reportTargetStudent.id] ||
+      reportTargetStudent.note ||
+      REMARK_PRESETS[0]
+    );
+    setIsEditStudentModalOpen(true);
+  };
+
+  const handleSaveEditStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportTargetStudent || !editStudentData.name || !editStudentData.rollNo) {
+      showToast('Name and Roll number are required', 'warning');
+      return;
+    }
+
+    updateStudent(reportTargetStudent.id, {
+      ...editStudentData,
+      note: editStudentRemark.trim(),
+    });
+
+    if (editStudentRemark.trim()) {
+      setCustomRemarksMap(prev => ({ ...prev, [reportTargetStudent.id]: editStudentRemark.trim() }));
+    }
+
+    // Refresh active student
+    setActiveStudentForReport({
+      ...reportTargetStudent,
+      ...editStudentData,
+      note: editStudentRemark.trim(),
+    } as Student);
+
+    setIsEditStudentModalOpen(false);
+    showToast(`Updated student profile for ${editStudentData.name}!`, 'success');
+  };
+
   const handleSendReportCardWhatsApp = (student: Student) => {
     const parentPhone = student.parentWhatsApp || student.parentPhone || '919876543210';
     const cleanPhone = parentPhone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
       `*OFFICIAL REPORT CARD - ${institution.name.toUpperCase()}*\n` +
+      `Academic Session: *${student.academicYear || activeAcademicYear}*\n` +
       `Student: *${student.name}* (Roll #${student.rollNo})\n` +
       `Class: *${student.classSec}* | Exam: *${selectedExam}*\n` +
       `Aggregate: *${reportStats.total}/${examSubjects.length * 50} (${reportStats.pct}%)*\n` +
       `Grade: *${reportStats.grade}* | Class Rank: *#${reportRank}*\n` +
       `Attendance: *${student.attendancePct}%*\n` +
+      `Remarks: "${customRemarksMap[student.id] || student.note || REMARK_PRESETS[0]}"\n` +
       `Principal: ${institution.principalName} (${institution.affiliationCode})\n\n` +
       `Downloaded official digitally signed report card via EduTrack Pro.`
     );
@@ -361,10 +581,7 @@ export const MarksView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveTab('students');
-                    showToast(`Navigate to Students directory to add student for ${selectedClass}`);
-                  }}
+                  onClick={handleOpenAddStudentModal}
                   className="text-[10px] font-bold text-[#007d55] hover:underline"
                 >
                   + Add Student
@@ -486,7 +703,10 @@ export const MarksView: React.FC = () => {
           type="button"
         >
           <FileText className="w-4 h-4 shrink-0" />
-          <span>Report Card Generator</span>
+          <span>Report Card Session</span>
+          <span className="hidden md:inline-block px-1.5 py-0.5 bg-[#dbe1ff] text-[#00174b] text-[9px] font-bold rounded-full">
+            Student Option
+          </span>
         </button>
       </div>
 
@@ -737,67 +957,196 @@ export const MarksView: React.FC = () => {
         </section>
       )}
 
-      {/* VIEW 3: Report Card Generator */}
+      {/* VIEW 3: Report Card Session & Generator */}
       {activeSubView === 'report' && (
         <section className="space-y-4">
-          {/* Student Selector Ribbon */}
-          <div className="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-[#737686]">Select Student for Report Card:</span>
-              <select
-                value={reportTargetStudent?.id || ''}
-                onChange={e => {
-                  const s = students.find(x => x.id === e.target.value);
-                  if (s) setActiveStudentForReport(s);
-                }}
-                className="h-9 px-3 bg-[#f2f3ff] rounded-xl text-xs font-bold text-[#004ac6] border border-[#dae2fd]"
-              >
-                {classStudents.map(s => (
-                  <option key={s.id} value={s.id}>
-                    Roll #{s.rollNo} — {s.name} ({s.classSec})
-                  </option>
-                ))}
-              </select>
+          {/* STUDENT OPTION COMMAND BAR */}
+          <div className="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs space-y-3">
+            {/* Top Row: Academic Session, Class Option Filter, Search & Quick Action Buttons */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Academic Session Option */}
+                <div className="flex items-center gap-1.5 bg-[#f2f3ff] px-2.5 py-1.5 rounded-xl border border-[#dae2fd]">
+                  <Calendar className="w-3.5 h-3.5 text-[#004ac6] shrink-0" />
+                  <span className="text-[10px] font-bold text-[#737686] uppercase">Session:</span>
+                  <select
+                    value={activeAcademicYear}
+                    onChange={e => {
+                      setActiveAcademicYear(e.target.value);
+                      showToast(`Switched Academic Session to ${e.target.value}`, 'info');
+                    }}
+                    className="bg-transparent text-xs font-bold text-[#004ac6] focus:outline-none cursor-pointer"
+                  >
+                    {academicSessions.map(sess => (
+                      <option key={sess.id} value={sess.name}>
+                        {sess.name} ({sess.status})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setIsAcademicSessionModalOpen(true)}
+                    className="text-[10px] text-[#004ac6] hover:underline font-bold"
+                    title="Manage Academic Sessions"
+                  >
+                    Manage
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('students');
-                  showToast(`Navigate to Students directory to add student for class "${selectedClass}"`);
-                }}
-                className="h-9 px-3 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
-                title={`Add student to class ${selectedClass}`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Add Student to {selectedClass === 'ALL' ? 'Institution' : selectedClass}</span>
-              </button>
+                {/* Class Option Filter */}
+                <div className="flex items-center gap-1.5 bg-[#f2f3ff] px-2.5 py-1.5 rounded-xl border border-[#dae2fd]">
+                  <Layers className="w-3.5 h-3.5 text-[#007d55] shrink-0" />
+                  <span className="text-[10px] font-bold text-[#737686] uppercase">Class:</span>
+                  <select
+                    value={reportClassFilter}
+                    onChange={e => setReportClassFilter(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-[#131b2e] focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Classes ({students.length})</option>
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Live Student Search Filter */}
+                <div className="relative min-w-[170px] flex-1 sm:flex-initial">
+                  <Search className="w-3.5 h-3.5 text-[#737686] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search student / roll..."
+                    value={searchStudentTerm}
+                    onChange={e => setSearchStudentTerm(e.target.value)}
+                    className="w-full h-8.5 pl-8 pr-7 bg-[#f2f3ff] rounded-xl text-xs text-[#131b2e] border border-[#dae2fd] placeholder:text-[#737686] outline-none focus:bg-white"
+                  />
+                  {searchStudentTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchStudentTerm('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons: Add Student Option, Edit Student Option, Print, WhatsApp */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleOpenAddStudentModal}
+                  className="h-8.5 px-3 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                  title="Enroll new student and generate official report card"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>+ Add Student Option</span>
+                </button>
+
+                {reportTargetStudent && (
+                  <button
+                    type="button"
+                    onClick={handleOpenEditStudentModal}
+                    className="h-8.5 px-2.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all"
+                    title="Edit selected student profile, remarks and attendance"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Student</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => reportTargetStudent && handleSendReportCardWhatsApp(reportTargetStudent)}
+                  className="h-8.5 px-2.5 bg-[#007d55] text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs active:scale-95"
+                  title="WhatsApp official report card to parent"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="h-8.5 px-2.5 bg-[#004ac6] text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs active:scale-95"
+                  title="Print or Save PDF Report Card"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => reportTargetStudent && handleSendReportCardWhatsApp(reportTargetStudent)}
-                className="h-9 px-3 bg-[#007d55] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>WhatsApp Parent</span>
-              </button>
+            {/* Bottom Row: Student Selector with Prev / Next Navigation and Quick Stats */}
+            <div className="pt-2 border-t border-[#eaedff] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Prev & Next Navigation Buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrevStudent}
+                    disabled={reportFilteredStudents.length <= 1}
+                    className="w-8 h-8 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] disabled:opacity-40 flex items-center justify-center text-[#131b2e] border border-[#dae2fd]"
+                    title="Previous Student Report Card"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStudent}
+                    disabled={reportFilteredStudents.length <= 1}
+                    className="w-8 h-8 rounded-xl bg-[#f2f3ff] hover:bg-[#eaedff] disabled:opacity-40 flex items-center justify-center text-[#131b2e] border border-[#dae2fd]"
+                    title="Next Student Report Card"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <span className="text-[11px] font-bold text-[#737686] px-1.5">
+                    {reportFilteredStudents.length > 0 ? `${currentStudentIdx + 1} of ${reportFilteredStudents.length}` : '0 of 0'}
+                  </span>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="h-9 px-3 bg-[#004ac6] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print / PDF</span>
-              </button>
+                {/* Student Select Dropdown */}
+                <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+                  <select
+                    value={reportTargetStudent?.id || ''}
+                    onChange={e => {
+                      const s = students.find(x => x.id === e.target.value);
+                      if (s) setActiveStudentForReport(s);
+                    }}
+                    className="h-8.5 px-3 bg-[#f2f3ff] rounded-xl text-xs font-bold text-[#004ac6] border border-[#dae2fd] max-w-[280px] sm:max-w-[340px] truncate"
+                  >
+                    {reportFilteredStudents.map(s => (
+                      <option key={s.id} value={s.id}>
+                        Roll #{s.rollNo} — {s.name} ({s.classSec})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Quick Summary Pill for Selected Student */}
+              {reportTargetStudent && (
+                <div className="flex items-center gap-2 text-xs flex-wrap">
+                  <span className="px-2 py-0.5 bg-[#bdffdb] text-[#002113] rounded-full text-[10px] font-bold">
+                    Class Rank #{reportRank}
+                  </span>
+                  <span className="text-[11px] font-bold text-[#131b2e]">
+                    Total: {reportStats.total}/{examSubjects.length * 50} ({reportStats.pct}%)
+                  </span>
+                  <span className="px-2 py-0.5 bg-[#dbe1ff] text-[#00174b] rounded-full text-[10px] font-bold">
+                    Grade {reportStats.grade}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Official Report Card Printable Canvas */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#eaedff] shadow-lg max-w-4xl mx-auto space-y-6 text-left">
             {/* Report Card Header */}
-            <div className="border-b-2 border-[#004ac6] pb-4 flex items-center justify-between gap-4">
+            <div className="border-b-2 border-[#004ac6] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <img
                   src={institution.logoUrl}
@@ -810,41 +1159,63 @@ export const MarksView: React.FC = () => {
                   <p className="text-[11px] text-[#737686]">{institution.address}</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <span className="px-3 py-1 bg-[#004ac6] text-white font-bold text-xs rounded-xl uppercase">
                   Progress Report Card
                 </span>
-                <p className="text-[10px] text-[#737686] mt-1">Session: {institution.academicSession}</p>
+                <p className="text-xs font-bold text-[#004ac6] mt-1.5">
+                  Academic Session: {reportTargetStudent?.academicYear || activeAcademicYear || institution.academicSession}
+                </p>
+                <p className="text-[10px] text-[#737686]">Exam: {selectedExam}</p>
               </div>
             </div>
 
-            {/* Student Profile Strip with Student Photo */}
-            <div className="bg-[#faf8ff] p-4 rounded-2xl border border-[#dae2fd] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <img
-                  src={reportTargetStudent?.avatarUrl}
-                  alt={reportTargetStudent?.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-[#004ac6] shadow-sm"
-                />
-                <div className="space-y-0.5">
-                  <h3 className="text-base font-bold text-[#131b2e]">{reportTargetStudent?.name}</h3>
+            {/* Student Profile Strip with Student Photo & Edit Option */}
+            <div className="bg-[#faf8ff] p-4 rounded-2xl border border-[#dae2fd] flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="relative group shrink-0">
+                  <img
+                    src={reportTargetStudent?.avatarUrl || STUDENT_AVATAR_PRESETS[0]}
+                    alt={reportTargetStudent?.name}
+                    className="w-16 h-16 rounded-2xl object-cover border-2 border-[#004ac6] shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleOpenEditStudentModal}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#004ac6] text-white flex items-center justify-center shadow-xs hover:scale-105"
+                    title="Change Student Photo / Details"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-[#131b2e] truncate">{reportTargetStudent?.name}</h3>
+                    <button
+                      type="button"
+                      onClick={handleOpenEditStudentModal}
+                      className="text-[#004ac6] hover:underline text-[10px] font-bold"
+                    >
+                      (Edit)
+                    </button>
+                  </div>
                   <p className="text-xs text-[#737686]">
                     Roll No: <strong className="text-[#131b2e]">#{reportTargetStudent?.rollNo}</strong> • Class: <strong className="text-[#131b2e]">{reportTargetStudent?.classSec}</strong>
                   </p>
                   <p className="text-xs text-[#737686]">
-                    Parent: {reportTargetStudent?.parentName} ({reportTargetStudent?.parentRelation}) • Contact: {reportTargetStudent?.parentPhone}
+                    Parent: {reportTargetStudent?.parentName} ({reportTargetStudent?.parentRelation || 'Father'}) • Contact: {reportTargetStudent?.parentPhone}
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                <div className="bg-white p-2 rounded-xl border border-[#dae2fd]">
+              <div className="grid grid-cols-2 gap-2 text-center text-xs w-full md:w-auto">
+                <div className="bg-white p-2.5 rounded-xl border border-[#dae2fd]">
                   <span className="text-[10px] text-[#737686] block">Class Rank</span>
                   <span className="font-extrabold text-base text-[#004ac6]">#{reportRank}</span>
                 </div>
-                <div className="bg-white p-2 rounded-xl border border-[#dae2fd]">
+                <div className="bg-white p-2.5 rounded-xl border border-[#dae2fd]">
                   <span className="text-[10px] text-[#737686] block">Attendance</span>
-                  <span className="font-extrabold text-base text-[#007d55]">{reportTargetStudent?.attendancePct}%</span>
+                  <span className="font-extrabold text-base text-[#007d55]">{reportTargetStudent?.attendancePct || 96}%</span>
                 </div>
               </div>
             </div>
@@ -891,23 +1262,77 @@ export const MarksView: React.FC = () => {
               </table>
             </div>
 
+            {/* Co-Scholastic & Discipline Assessment */}
+            <div className="bg-[#faf8ff] p-3.5 rounded-2xl border border-[#eaedff] space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#737686] block">
+                Co-Scholastic & Discipline Assessment
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="bg-white p-2 rounded-xl border border-[#dae2fd] text-center">
+                  <span className="text-[10px] text-[#737686] block">Work Education</span>
+                  <span className="font-bold text-[#007d55]">Grade A+</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl border border-[#dae2fd] text-center">
+                  <span className="text-[10px] text-[#737686] block">Art & Culture</span>
+                  <span className="font-bold text-[#007d55]">Grade A</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl border border-[#dae2fd] text-center">
+                  <span className="text-[10px] text-[#737686] block">Health & Sports</span>
+                  <span className="font-bold text-[#007d55]">Grade A+</span>
+                </div>
+                <div className="bg-white p-2 rounded-xl border border-[#dae2fd] text-center">
+                  <span className="text-[10px] text-[#737686] block">Discipline & Conduct</span>
+                  <span className="font-bold text-[#007d55]">Grade A+</span>
+                </div>
+              </div>
+            </div>
+
             {/* Remarks & Signatures */}
-            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-[#eaedff]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#eaedff]">
               <div>
-                <span className="text-[10px] font-bold uppercase text-[#737686] block mb-1">Class Teacher Remarks:</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase text-[#737686]">Class Teacher Remarks:</span>
+                  <button
+                    type="button"
+                    onClick={handleOpenEditStudentModal}
+                    className="text-[10px] text-[#004ac6] hover:underline font-bold"
+                  >
+                    Edit Remarks
+                  </button>
+                </div>
                 <p className="text-xs text-[#434655] italic bg-[#faf8ff] p-3 rounded-xl border border-[#dae2fd]">
-                  "{reportTargetStudent?.name} exhibits exceptional analytical diligence and leadership in classroom discussions."
+                  "{customRemarksMap[reportTargetStudent?.id || ''] || reportTargetStudent?.note || REMARK_PRESETS[0]}"
                 </p>
+                {/* Quick remark templates */}
+                <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                  <span className="text-[9px] font-bold text-[#737686]">Quick templates:</span>
+                  {REMARK_PRESETS.slice(0, 2).map((rem, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        if (reportTargetStudent) {
+                          setCustomRemarksMap(prev => ({ ...prev, [reportTargetStudent.id]: rem }));
+                          showToast('Teacher remark updated!', 'info');
+                        }
+                      }}
+                      className="text-[9px] px-2 py-0.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-full border border-[#dae2fd]"
+                    >
+                      Template {idx + 1}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-col items-end justify-end">
+              <div className="flex flex-col items-center md:items-end justify-end">
                 <div className="text-center">
-                  <div className="w-32 h-10 border-b border-dashed border-[#737686] mb-1 flex items-center justify-center">
+                  <div className="w-36 h-10 border-b border-dashed border-[#737686] mb-1 flex items-center justify-center">
                     <span className="text-xs font-serif italic text-[#004ac6]">{institution.principalName}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-[#737686] uppercase">
-                    {institution.principalDesignation} Signature & Official Stamp
+                  <span className="text-[10px] font-bold text-[#737686] uppercase block">
+                    {institution.principalDesignation} Signature & Stamp
                   </span>
+                  <span className="text-[9px] text-[#737686]">Affiliation: #{institution.affiliationCode}</span>
                 </div>
               </div>
             </div>
@@ -1043,6 +1468,610 @@ export const MarksView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add Student to Examination & Report Card Session Modal */}
+      {isAddStudentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                  <UserPlus className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg">Add Student to Report Card Session</h3>
+                  <p className="text-xs text-white/80">Enroll student into academic session, configure marks & report card</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddStudentModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewStudent} className="p-4 sm:p-5 space-y-3.5 text-xs max-h-[82vh] overflow-y-auto">
+              {/* Academic Session Selector & Class */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Academic Session *</label>
+                  <select
+                    value={newStudentSession}
+                    onChange={e => setNewStudentSession(e.target.value)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold text-[#004ac6] focus:bg-white outline-none"
+                  >
+                    {academicSessions.map(sess => (
+                      <option key={sess.id} value={sess.name}>
+                        {sess.name} ({sess.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Assigned Class *</label>
+                  <select
+                    value={newStudentClass}
+                    onChange={e => setNewStudentClass(e.target.value)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  >
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name} ({c.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Student Name & Roll Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Student Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentName}
+                    onChange={e => setNewStudentName(e.target.value)}
+                    placeholder="e.g. Aarav Sharma"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-semibold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold uppercase text-[10px] text-[#737686]">Roll Number *</label>
+                    <button
+                      type="button"
+                      onClick={() => setNewStudentRoll(`DPS-${Math.floor(1000 + Math.random() * 9000)}`)}
+                      className="text-[10px] font-bold text-[#004ac6] hover:underline"
+                    >
+                      Auto-Gen Roll
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentRoll}
+                    onChange={e => setNewStudentRoll(e.target.value)}
+                    placeholder="DPS-1024"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Student Photo & Camera Studio */}
+              <div className="p-3 bg-[#f2f3ff] rounded-2xl border border-[#dae2fd] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold uppercase text-[10px] text-[#737686] flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-[#004ac6]" />
+                    Student Photo & Profile Picture
+                  </label>
+                  <span className="text-[10px] text-[#004ac6] font-semibold">Camera, Upload or Presets</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  {/* Photo Preview with quick snap button */}
+                  <div className="relative group shrink-0">
+                    <img
+                      src={newStudentAvatar}
+                      alt="Student Preview"
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#004ac6] shadow-xs bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsAddStudentCameraOpen(true)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#004ac6] hover:bg-[#003899] text-white flex items-center justify-center shadow active:scale-95 transition-all"
+                      title="Take Photo with Camera"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Camera Snap & Upload Actions */}
+                  <div className="flex-1 w-full space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddStudentCameraOpen(true)}
+                        className="flex-1 h-8 px-2.5 bg-gradient-to-r from-[#004ac6] to-[#007d55] hover:opacity-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Camera</span>
+                      </button>
+
+                      <label className="flex-1 h-8 px-2.5 bg-white hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === 'string') {
+                                  setNewStudentAvatar(reader.result);
+                                  showToast('Student photo uploaded!');
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rand = STUDENT_AVATAR_PRESETS[Math.floor(Math.random() * STUDENT_AVATAR_PRESETS.length)];
+                          setNewStudentAvatar(rand);
+                        }}
+                        className="h-8 px-2.5 bg-white hover:bg-[#eaedff] text-[#434655] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1"
+                        title="Random Avatar"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                      {STUDENT_AVATAR_PRESETS.map((url, idx) => {
+                        const isSelected = newStudentAvatar === url;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setNewStudentAvatar(url)}
+                            className={`relative rounded-lg p-0.5 transition-all shrink-0 ${
+                              isSelected ? 'ring-2 ring-[#004ac6] scale-105' : 'opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={url} alt={`Preset ${idx + 1}`} className="w-7 h-7 rounded-md object-cover" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Parent Details & Attendance */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent / Guardian Name</label>
+                  <input
+                    type="text"
+                    value={newParentName}
+                    onChange={e => setNewParentName(e.target.value)}
+                    placeholder="e.g. Mr. Rajesh Sharma"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent WhatsApp / Phone</label>
+                  <input
+                    type="tel"
+                    value={newParentPhone}
+                    onChange={e => {
+                      setNewParentPhone(e.target.value);
+                      setNewParentWhatsApp(e.target.value);
+                    }}
+                    placeholder="9876543210"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Attendance Percentage</label>
+                  <input
+                    type="number"
+                    min={40}
+                    max={100}
+                    value={newStudentAttendance}
+                    onChange={e => setNewStudentAttendance(Math.min(100, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold text-[#007d55] text-center focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Subject Marks for Current Exam with live calculation */}
+              <div className="pt-2 border-t border-[#eaedff]">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-bold uppercase text-[10px] text-[#737686]">
+                    Subject Marks for {selectedExam} (Max 50)
+                  </label>
+                  <span className="text-[10px] text-[#004ac6] font-semibold">Pre-filled with passing scores</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {examSubjects.map(sub => {
+                    const subKey = sub.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const currentVal = newStudentInitialMarks[subKey] !== undefined ? newStudentInitialMarks[subKey] : 42;
+                    return (
+                      <div key={sub} className="bg-[#f2f3ff] p-2 rounded-xl border border-[#dae2fd]">
+                        <span className="text-[10px] font-bold text-[#131b2e] block truncate mb-1">{sub}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={currentVal}
+                          onChange={e => {
+                            const val = Math.max(0, Math.min(50, parseInt(e.target.value, 10) || 0));
+                            setNewStudentInitialMarks(prev => ({ ...prev, [subKey]: val }));
+                          }}
+                          className="w-full h-8 px-2 bg-white rounded-lg border border-[#dae2fd] text-center font-bold text-xs outline-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Teacher Remarks for Report Card */}
+              <div className="pt-2 border-t border-[#eaedff]">
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                  Class Teacher Remark on Report Card
+                </label>
+                <textarea
+                  rows={2}
+                  value={newStudentRemarks}
+                  onChange={e => setNewStudentRemarks(e.target.value)}
+                  placeholder="Enter remarks about student's performance..."
+                  className="w-full p-2.5 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs text-[#131b2e] focus:bg-white outline-none"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                  <span className="text-[9px] font-bold text-[#737686]">Suggestions:</span>
+                  {REMARK_PRESETS.map((rem, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNewStudentRemarks(rem)}
+                      className="text-[9px] px-2 py-0.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-full border border-[#dae2fd]"
+                    >
+                      {idx === 0 ? 'Exemplary' : idx === 1 ? 'Analytical' : idx === 2 ? 'Hardworking' : 'Attentive'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStudentModalOpen(false)}
+                  className="h-10 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="h-10 px-5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Enroll & Generate Report Card</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Details & Report Card Modal */}
+      {isEditStudentModalOpen && reportTargetStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                  <Edit3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg">Edit Student Profile & Report Card</h3>
+                  <p className="text-xs text-white/80">{reportTargetStudent.name} (Roll #{reportTargetStudent.rollNo})</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditStudentModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditStudent} className="p-4 sm:p-5 space-y-3.5 text-xs max-h-[82vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Student Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editStudentData.name || ''}
+                    onChange={e => setEditStudentData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-semibold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Roll Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editStudentData.rollNo || ''}
+                    onChange={e => setEditStudentData(prev => ({ ...prev, rollNo: e.target.value }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Class & Academic Session */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Assigned Class</label>
+                  <select
+                    value={editStudentData.classSec || classes[0]?.name}
+                    onChange={e => setEditStudentData(prev => ({
+                      ...prev,
+                      classSec: e.target.value,
+                      gradeLevel: e.target.value.replace(/^Class\s*/i, ''),
+                    }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  >
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Academic Session</label>
+                  <select
+                    value={editStudentData.academicYear || activeAcademicYear}
+                    onChange={e => setEditStudentData(prev => ({ ...prev, academicYear: e.target.value }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold text-[#004ac6] focus:bg-white outline-none"
+                  >
+                    {academicSessions.map(sess => (
+                      <option key={sess.id} value={sess.name}>
+                        {sess.name} ({sess.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Student Photo & Camera Studio */}
+              <div className="p-3 bg-[#f2f3ff] rounded-2xl border border-[#dae2fd] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold uppercase text-[10px] text-[#737686] flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-[#004ac6]" />
+                    Student Photo & Profile Picture
+                  </label>
+                  <span className="text-[10px] text-[#004ac6] font-semibold">Camera, Upload or Presets</span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  {/* Photo Preview with quick snap button */}
+                  <div className="relative group shrink-0">
+                    <img
+                      src={editStudentData.avatarUrl || STUDENT_AVATAR_PRESETS[0]}
+                      alt="Student Preview"
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#004ac6] shadow-xs bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsEditStudentCameraOpen(true)}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#004ac6] hover:bg-[#003899] text-white flex items-center justify-center shadow active:scale-95 transition-all"
+                      title="Take Photo with Camera"
+                    >
+                      <Camera className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Camera Snap & Upload Actions */}
+                  <div className="flex-1 w-full space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditStudentCameraOpen(true)}
+                        className="flex-1 h-8 px-2.5 bg-gradient-to-r from-[#004ac6] to-[#007d55] hover:opacity-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Camera</span>
+                      </button>
+
+                      <label className="flex-1 h-8 px-2.5 bg-white hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === 'string') {
+                                  setEditStudentData(prev => ({ ...prev, avatarUrl: reader.result as string }));
+                                  showToast('Student photo updated!');
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rand = STUDENT_AVATAR_PRESETS[Math.floor(Math.random() * STUDENT_AVATAR_PRESETS.length)];
+                          setEditStudentData(prev => ({ ...prev, avatarUrl: rand }));
+                        }}
+                        className="h-8 px-2.5 bg-white hover:bg-[#eaedff] text-[#434655] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1"
+                        title="Random Avatar"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                      {STUDENT_AVATAR_PRESETS.map((url, idx) => {
+                        const isSelected = editStudentData.avatarUrl === url;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setEditStudentData(prev => ({ ...prev, avatarUrl: url }))}
+                            className={`relative rounded-lg p-0.5 transition-all shrink-0 ${
+                              isSelected ? 'ring-2 ring-[#004ac6] scale-105' : 'opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={url} alt={`Preset ${idx + 1}`} className="w-7 h-7 rounded-md object-cover" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Parent Details & Attendance */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent Name</label>
+                  <input
+                    type="text"
+                    value={editStudentData.parentName || ''}
+                    onChange={e => setEditStudentData(prev => ({ ...prev, parentName: e.target.value }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent Phone</label>
+                  <input
+                    type="tel"
+                    value={editStudentData.parentPhone || ''}
+                    onChange={e => setEditStudentData(prev => ({
+                      ...prev,
+                      parentPhone: e.target.value,
+                      parentWhatsApp: e.target.value,
+                    }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Attendance %</label>
+                  <input
+                    type="number"
+                    min={40}
+                    max={100}
+                    value={editStudentData.attendancePct || 96}
+                    onChange={e => setEditStudentData(prev => ({ ...prev, attendancePct: parseInt(e.target.value, 10) || 96 }))}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold text-[#007d55] text-center focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Class Teacher Remark */}
+              <div>
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                  Report Card Class Teacher Remarks
+                </label>
+                <textarea
+                  rows={2}
+                  value={editStudentRemark}
+                  onChange={e => setEditStudentRemark(e.target.value)}
+                  className="w-full p-2.5 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs text-[#131b2e] focus:bg-white outline-none"
+                />
+                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                  <span className="text-[9px] font-bold text-[#737686]">Templates:</span>
+                  {REMARK_PRESETS.map((rem, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setEditStudentRemark(rem)}
+                      className="text-[9px] px-2 py-0.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-full border border-[#dae2fd]"
+                    >
+                      {idx === 0 ? 'Exemplary' : idx === 1 ? 'Analytical' : idx === 2 ? 'Hardworking' : 'Attentive'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditStudentModalOpen(false)}
+                  className="h-10 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="h-10 px-5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Student Profile</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Student Camera Modal */}
+      <CameraCaptureModal
+        isOpen={isAddStudentCameraOpen}
+        onClose={() => setIsAddStudentCameraOpen(false)}
+        onCapture={(photoDataUrl) => {
+          setNewStudentAvatar(photoDataUrl);
+          showToast('Student photo captured via camera!');
+        }}
+        title={`Camera: ${newStudentName || 'New Student Photo'}`}
+        subtitle={`${newStudentClass} • Roll #${newStudentRoll || 'TBD'}`}
+      />
+
+      {/* Edit Student Camera Modal */}
+      <CameraCaptureModal
+        isOpen={isEditStudentCameraOpen}
+        onClose={() => setIsEditStudentCameraOpen(false)}
+        onCapture={(photoDataUrl) => {
+          setEditStudentData((prev) => ({ ...prev, avatarUrl: photoDataUrl }));
+          showToast('Student photo captured via camera!');
+        }}
+        title={`Camera: ${editStudentData.name || 'Edit Student Photo'}`}
+        subtitle={`${editStudentData.classSec || 'Class'} • Roll #${editStudentData.rollNo || 'N/A'}`}
+      />
     </div>
   );
 };

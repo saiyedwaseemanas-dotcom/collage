@@ -22,7 +22,6 @@ import {
   Wallet,
   Calendar,
   BellRing,
-  Video,
 } from 'lucide-react';
 
 export const NavigationDrawer: React.FC = () => {
@@ -46,7 +45,6 @@ export const NavigationDrawer: React.FC = () => {
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'live_class', label: 'Live Class & Recordings', icon: <Video className="w-5 h-5" />, badge: 'LIVE' },
     { id: 'students', label: 'Students Database', icon: <Users className="w-5 h-5" /> },
     { id: 'teachers', label: 'Faculty & Staff Roster', icon: <UserCheck className="w-5 h-5" /> },
     { id: 'attendance', label: 'Daily Attendance Ledger', icon: <CalendarCheck className="w-5 h-5" /> },

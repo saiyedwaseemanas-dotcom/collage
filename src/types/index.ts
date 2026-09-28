@@ -239,7 +239,6 @@ export interface AcademicSession {
 
 export type ActiveTab = 
   | 'dashboard' 
-  | 'live_class'
   | 'attendance' 
   | 'fees'
   | 'syllabus' 
@@ -268,6 +267,8 @@ export interface NoticeItem {
   category: 'Urgent' | 'Fees' | 'Holiday' | 'Exams' | 'PTM' | 'General';
   targetAudience: 'All Parents' | 'Class-Specific' | 'All Teachers' | 'All Students' | string;
   targetClass?: string;
+  targetGroupId?: string;
+  targetGroupName?: string;
   priority: 'Normal' | 'High' | 'Urgent';
   publishedAt: string;
   publishedBy: string;
@@ -275,6 +276,17 @@ export interface NoticeItem {
   broadcastSent?: boolean;
   broadcastRecipientsCount?: number;
   academicYear?: string;
+}
+
+export interface BroadcastGroup {
+  id: string;
+  name: string; // e.g. "Class 10-A Science Batch", "Bus Route #4 Parents", "Hostel Residents", "Sports Club"
+  category: 'Class Group' | 'Transport' | 'Hostel' | 'Sports & Activities' | 'Academic Batch' | 'PTA Council' | 'Custom';
+  description?: string;
+  targetClass?: string; // e.g. "Class 10-A" or "ALL"
+  memberStudentIds: string[]; // List of Student IDs
+  academicYear?: string;
+  createdAt: string;
 }
 
 export interface CustomExam {

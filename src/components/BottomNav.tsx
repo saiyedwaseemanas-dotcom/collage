@@ -1,14 +1,14 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { ActiveTab } from '../types';
-import { LayoutDashboard, CalendarCheck, BookOpen, Award, RefreshCw, Video, Wallet } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, Award, Wallet, Users } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab } = useApp();
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'live_class', label: 'Live Class', icon: <Video className="w-5 h-5" /> },
+    { id: 'students', label: 'Students', icon: <Users className="w-5 h-5" /> },
     { id: 'attendance', label: 'Attendance', icon: <CalendarCheck className="w-5 h-5" /> },
     { id: 'fees', label: 'Fees', icon: <Wallet className="w-5 h-5" /> },
     { id: 'exams', label: 'Exams', icon: <Award className="w-5 h-5" /> },

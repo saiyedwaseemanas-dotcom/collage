@@ -16,7 +16,6 @@ import { AcademicSessionModal } from './components/AcademicSessionModal';
 import { DashboardView } from './views/DashboardView';
 import { AttendanceView } from './views/AttendanceView';
 import { SyllabusView } from './views/SyllabusView';
-import { LiveClassView } from './views/LiveClassView';
 import { MarksView } from './views/MarksView';
 import { SheetsSyncView } from './views/SheetsSyncView';
 import { StudentsDirectoryView } from './views/StudentsDirectoryView';
@@ -41,7 +40,6 @@ const MainContent: React.FC = () => {
       {/* Main View Area */}
       <main className="flex-1 pt-16 pb-20 w-full overflow-x-hidden">
         {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'live_class' && <LiveClassView />}
         {activeTab === 'attendance' && <AttendanceView />}
         {activeTab === 'fees' && <FeesManagementView />}
         {activeTab === 'calendar' && <AcademicCalendarView />}

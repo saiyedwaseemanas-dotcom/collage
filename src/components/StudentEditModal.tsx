@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Student } from '../types';
 import { useApp } from '../context/AppContext';
+import { CameraCaptureModal } from './CameraCaptureModal';
 import {
   UserPlus,
   UserCog,
@@ -13,6 +14,7 @@ import {
   Image,
   Sparkles,
   RefreshCw,
+  Video,
 } from 'lucide-react';
 
 const STUDENT_AVATAR_PRESETS = [
@@ -44,6 +46,8 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({
   const { addStudent, updateStudent, deleteStudent, showToast, selectedClass, classes } = useApp();
 
   const initialClass = defaultClassSec || (selectedClass !== 'ALL' ? selectedClass : (classes[0]?.name || 'Class 10-A'));
+
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Student>>({
     rollNo: '1021',
@@ -240,25 +244,42 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({
                 <Camera className="w-4 h-4 text-[#004ac6]" />
                 Student Photo & Profile Picture Option
               </h4>
-              <span className="text-[10px] text-[#737686]">JPG, PNG or Presets</span>
+              <span className="text-[10px] text-[#737686]">Live Camera, Upload or Presets</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3">
-              {/* Photo Preview */}
+              {/* Photo Preview with quick capture badge */}
               <div className="relative group shrink-0">
                 <img
                   src={formData.avatarUrl || STUDENT_AVATAR_PRESETS[0]}
                   alt="Student Preview"
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-[#004ac6] shadow-sm bg-white"
                 />
+                <button
+                  type="button"
+                  onClick={() => setIsCameraModalOpen(true)}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#004ac6] hover:bg-[#003899] text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                  title="Take photo by camera"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {/* Upload Local File or URL */}
+              {/* Action Buttons: Live Camera, Upload Local File, Random Preset */}
               <div className="flex-1 w-full space-y-2">
-                <div className="flex items-center gap-2">
-                  <label className="flex-1 h-9 px-3 bg-[#004ac6] hover:bg-[#003899] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Student Photo</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraModalOpen(true)}
+                    className="h-9 px-2.5 bg-gradient-to-r from-[#004ac6] to-[#007d55] hover:opacity-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                  >
+                    <Camera className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Camera</span>
+                  </button>
+
+                  <label className="h-9 px-2.5 bg-white hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Upload</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -284,7 +305,7 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({
                       setFormData({ ...formData, avatarUrl: randomAvatar });
                       showToast('Assigned random avatar');
                     }}
-                    className="h-9 px-3 bg-white hover:bg-[#eaedff] text-[#434655] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1"
+                    className="h-9 px-2.5 bg-white hover:bg-[#eaedff] text-[#434655] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center justify-center gap-1 col-span-2 sm:col-span-1"
                     title="Pick Random Portrait"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -455,6 +476,18 @@ export const StudentEditModal: React.FC<StudentEditModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Live Camera Photo Capture Modal */}
+      <CameraCaptureModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={(photoDataUrl) => {
+          setFormData((prev) => ({ ...prev, avatarUrl: photoDataUrl }));
+          showToast('Student photo captured via camera!');
+        }}
+        title={`Camera: ${formData.name || 'Student Photo'}`}
+        subtitle={`Class: ${formData.classSec || 'Selected Class'} • Roll: #${formData.rollNo || 'N/A'}`}
+      />
     </div>
   );
 };

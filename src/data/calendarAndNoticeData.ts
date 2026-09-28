@@ -1,4 +1,57 @@
-import { CalendarEvent, NoticeItem, CustomExam } from '../types';
+import { CalendarEvent, NoticeItem, CustomExam, BroadcastGroup } from '../types';
+
+export const INITIAL_BROADCAST_GROUPS: BroadcastGroup[] = [
+  {
+    id: 'grp-01',
+    name: 'Class 10-A Board Preparation & Academic Batch',
+    category: 'Class Group',
+    targetClass: 'Class 10-A',
+    description: 'Class 10-A registered students, class teacher & parent communication group.',
+    memberStudentIds: ['1', '2', '3', '4', '5'],
+    createdAt: '2026-06-01',
+  },
+  {
+    id: 'grp-02',
+    name: 'Class 9-B Secondary Science & Math Batch',
+    category: 'Class Group',
+    targetClass: 'Class 9-B',
+    description: 'Class 9 Section B dedicated group for daily homework & academic notices.',
+    memberStudentIds: ['6', '7', '8'],
+    createdAt: '2026-06-05',
+  },
+  {
+    id: 'grp-03',
+    name: 'Transport Route #4 (East City Loop) Parents',
+    category: 'Transport',
+    description: 'Daily bus route #4 transit tracking, driver contact & emergency delay alerts.',
+    memberStudentIds: ['1', '3', '7', '9'],
+    createdAt: '2026-06-10',
+  },
+  {
+    id: 'grp-04',
+    name: 'Junior & Senior Science Olympiad Council',
+    category: 'Academic Batch',
+    description: 'Selected candidates for State Science & Mathematics Olympiad competitive training.',
+    memberStudentIds: ['2', '4', '8'],
+    createdAt: '2026-07-01',
+  },
+  {
+    id: 'grp-05',
+    name: 'Inter-School Athletics & Football Squad',
+    category: 'Sports & Activities',
+    description: 'School tournament sports team members, training schedules & dietary circulars.',
+    memberStudentIds: ['1', '5', '9', '11'],
+    createdAt: '2026-07-15',
+  },
+  {
+    id: 'grp-06',
+    name: 'Parent-Teacher Association (PTA) Executive Council',
+    category: 'PTA Council',
+    description: 'Elected parent representatives for quarterly curriculum reviews & institutional initiatives.',
+    memberStudentIds: ['1', '2', '3', '6', '10'],
+    createdAt: '2026-06-15',
+  },
+];
 
 export const INITIAL_EXAMS: CustomExam[] = [
   { id: 'exam-ut1', name: 'Unit Test 1', code: 'UT-1', maxMarksPerSubject: 50, startDate: '2026-07-15', endDate: '2026-07-22' },

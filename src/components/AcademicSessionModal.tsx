@@ -13,6 +13,9 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
+  Award,
+  FileText,
+  Users,
 } from 'lucide-react';
 
 export const AcademicSessionModal: React.FC = () => {
@@ -27,6 +30,8 @@ export const AcademicSessionModal: React.FC = () => {
     deleteAcademicSession,
     userRole,
     showToast,
+    setActiveTab,
+    students,
   } = useApp();
 
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -324,14 +329,35 @@ export const AcademicSessionModal: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-[#737686] mt-0.5 line-clamp-1">
-                        {session.startDate} to {session.endDate} • {session.termName || 'Academic Cycle'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <p className="text-[11px] text-[#737686] line-clamp-1">
+                          {session.startDate} to {session.endDate} • {session.termName || 'Academic Cycle'}
+                        </p>
+                        <span className="text-[10px] font-bold text-[#007d55] bg-[#bdffdb] px-2 py-0.2 rounded-md flex items-center gap-1">
+                          <Users className="w-2.5 h-2.5" />
+                          <span>{students.length} Students Active</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAcademicYear(session.name);
+                        setActiveTab('exams');
+                        setIsAcademicSessionModalOpen(false);
+                        showToast(`Opened Report Card Session for ${session.name}!`, 'info');
+                      }}
+                      className="px-2.5 py-1.5 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] text-xs font-bold rounded-xl flex items-center gap-1 active:scale-95 transition-all"
+                      title="Open Report Card Session for this Academic Year"
+                    >
+                      <Award className="w-3.5 h-3.5" />
+                      <span>Report Cards</span>
+                    </button>
+
                     {!isSelected && (
                       <button
                         type="button"

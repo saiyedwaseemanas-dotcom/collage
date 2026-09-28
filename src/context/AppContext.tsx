@@ -24,6 +24,7 @@ import {
   LiveSession,
   LiveRecording,
   StaffShift,
+  BroadcastGroup,
 } from '../types';
 import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS, INITIAL_FACULTY_LOGS } from '../data/mockData';
 import { DEFAULT_INSTITUTION, CLIENT_PRESETS } from '../data/brandingPresets';
@@ -34,7 +35,7 @@ import {
   INITIAL_FEE_TRANSACTIONS,
   INITIAL_LEAVE_APPLICATIONS,
 } from '../data/feeAndLeaveData';
-import { INITIAL_CALENDAR_EVENTS, INITIAL_NOTICES, INITIAL_EXAMS } from '../data/calendarAndNoticeData';
+import { INITIAL_CALENDAR_EVENTS, INITIAL_NOTICES, INITIAL_EXAMS, INITIAL_BROADCAST_GROUPS } from '../data/calendarAndNoticeData';
 import {
   INITIAL_ACADEMIC_SESSIONS,
   INITIAL_LIVE_SESSIONS,
@@ -216,6 +217,18 @@ interface AppContextType {
   updateNotice: (id: string, updates: Partial<NoticeItem>) => void;
   broadcastNoticeToAllParents: (noticeId: string, customMessage?: string) => Promise<{ success: boolean; count: number }>;
   isBroadcastingNotice: boolean;
+
+  // Broadcast Groups & Class-Wise Groups
+  broadcastGroups: BroadcastGroup[];
+  addBroadcastGroup: (group: Omit<BroadcastGroup, 'id' | 'createdAt'> | BroadcastGroup) => void;
+  updateBroadcastGroup: (id: string, updates: Partial<BroadcastGroup>) => void;
+  deleteBroadcastGroup: (id: string) => void;
+  sendGroupBroadcast: (
+    groupId: string,
+    title: string,
+    body: string,
+    channels?: { whatsapp?: boolean; sms?: boolean; push?: boolean }
+  ) => Promise<{ success: boolean; count: number }>;
 
   // Dynamic Examination & Custom Subjects Module
   customExams: CustomExam[];
@@ -464,6 +477,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [isBroadcastingNotice, setIsBroadcastingNotice] = useState(false);
 
+  // 11b. Broadcast Groups (Class Groups, Transport, Academic Batches, Custom)
+  const [broadcastGroups, setBroadcastGroups] = useState<BroadcastGroup[]>(() => {
+    try {
+      const saved = localStorage.getItem('edutrack_broadcast_groups');
+      return saved ? JSON.parse(saved) : INITIAL_BROADCAST_GROUPS;
+    } catch {
+      return INITIAL_BROADCAST_GROUPS;
+    }
+  });
+
   // 12. Custom Exams & Dynamic Subjects
   const [customExams, setCustomExams] = useState<CustomExam[]>(() => {
     try {
@@ -619,6 +642,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('edutrack_notices_list', JSON.stringify(notices));
     setMetricsKey(Date.now());
   }, [notices]);
+
+  useEffect(() => {
+    localStorage.setItem('edutrack_broadcast_groups', JSON.stringify(broadcastGroups));
+    setMetricsKey(Date.now());
+  }, [broadcastGroups]);
 
   useEffect(() => {
     localStorage.setItem('edutrack_custom_exams', JSON.stringify(customExams));
@@ -1410,6 +1438,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, count: parentCount };
   };
 
+  // Broadcast Groups CRUD & Group Dispatch
+  const addBroadcastGroup = (groupData: Omit<BroadcastGroup, 'id' | 'createdAt'> | BroadcastGroup) => {
+    const newGroup: BroadcastGroup = {
+      ...groupData,
+      id: (groupData as BroadcastGroup).id || `grp-${Date.now()}`,
+      createdAt: (groupData as BroadcastGroup).createdAt || new Date().toISOString().split('T')[0],
+      academicYear: groupData.academicYear || activeAcademicYear,
+    };
+    setBroadcastGroups(prev => [newGroup, ...prev]);
+    showToast(`Broadcast Group "${newGroup.name}" created successfully!`, 'success');
+  };
+
+  const updateBroadcastGroup = (id: string, updates: Partial<BroadcastGroup>) => {
+    setBroadcastGroups(prev => prev.map(g => (g.id === id ? { ...g, ...updates } : g)));
+    showToast('Broadcast Group updated', 'success');
+  };
+
+  const deleteBroadcastGroup = (id: string) => {
+    setBroadcastGroups(prev => prev.filter(g => g.id !== id));
+    showToast('Broadcast Group deleted', 'info');
+  };
+
+  const sendGroupBroadcast = async (
+    groupId: string,
+    title: string,
+    body: string,
+    channels: { whatsapp?: boolean; sms?: boolean; push?: boolean } = { whatsapp: true, sms: true, push: true }
+  ): Promise<{ success: boolean; count: number }> => {
+    const group = broadcastGroups.find(g => g.id === groupId);
+    if (!group) {
+      showToast('Group not found', 'error');
+      return { success: false, count: 0 };
+    }
+
+    const memberCount = group.memberStudentIds.length;
+    await new Promise(r => setTimeout(r, 600));
+
+    // Register a notice for this group
+    addNotice({
+      title,
+      content: body,
+      category: 'General',
+      targetAudience: `Group: ${group.name}`,
+      targetGroupId: group.id,
+      targetGroupName: group.name,
+      targetClass: group.targetClass,
+      priority: 'High',
+      publishedBy: `${institution.principalName} (Group Dispatcher)`,
+      isPinned: true,
+      broadcastSent: true,
+      broadcastRecipientsCount: memberCount,
+      academicYear: activeAcademicYear,
+    });
+
+    const channelNames = [];
+    if (channels.whatsapp) channelNames.push('WhatsApp');
+    if (channels.sms) channelNames.push('SMS');
+    if (channels.push) channelNames.push('Portal Push');
+
+    showToast(`⚡ Group Broadcast delivered to ${memberCount} members in ${group.name} via ${channelNames.join(' + ')}!`, 'success');
+    return { success: true, count: memberCount };
+  };
+
   // Dynamic Examination & Custom Subjects
   const addCustomExam = (exam: CustomExam) => {
     setCustomExams(prev => [...prev, exam]);
@@ -1817,6 +1908,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateNotice,
         broadcastNoticeToAllParents,
         isBroadcastingNotice,
+
+        // Broadcast Groups & Class-Wise Groups
+        broadcastGroups,
+        addBroadcastGroup,
+        updateBroadcastGroup,
+        deleteBroadcastGroup,
+        sendGroupBroadcast,
 
         // Dynamic Examination & Custom Subjects
         customExams,

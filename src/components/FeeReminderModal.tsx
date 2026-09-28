@@ -8,18 +8,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   QrCode,
-  DollarSign,
-  Smartphone,
-  Calendar,
-  GraduationCap,
   Sparkles,
   Layers,
-  Phone,
   MessageSquare,
-  Building2,
-  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   ShieldCheck,
-  UserCheck,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 
 export const FeeReminderModal: React.FC = () => {
@@ -38,15 +34,14 @@ export const FeeReminderModal: React.FC = () => {
   } = useApp();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'overdue' | 'partial'>('all');
-  const [excludedStudentIds, setExcludedStudentIds] = useState<string[]>([]);
-  const [isSendingBulk, setIsSendingBulk] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState(0);
+  const [currentQueueIdx, setCurrentQueueIdx] = useState(0);
+  const [sentStudentIds, setSentStudentIds] = useState<string[]>([]);
   const [activePreviewType, setActivePreviewType] = useState<'parent-whatsapp' | 'student-popup' | 'teacher-roster'>('parent-whatsapp');
   const [showSimulatedPopup, setShowSimulatedPopup] = useState(false);
 
   if (!isFeeReminderModalOpen) return null;
 
-  // Filter students based on class and fee status
+  // Class-wise students with pending dues
   const classStudents = students.filter(s => {
     if (feeReminderClass !== 'ALL') {
       const match = s.classSec === feeReminderClass || s.gradeLevel === feeReminderClass.replace('Class ', '');
@@ -59,47 +54,49 @@ export const FeeReminderModal: React.FC = () => {
     return true;
   });
 
-  const activeRemindersList = classStudents.filter(s => !excludedStudentIds.includes(s.id));
-  const totalClassDue = activeRemindersList.reduce((acc, s) => acc + getFeeForStudent(s.id, s.classSec).balanceDue, 0);
+  const totalClassDue = classStudents.reduce((acc, s) => acc + getFeeForStudent(s.id, s.classSec).balanceDue, 0);
+  
+  // Safe index within classStudents
+  const safeIdx = classStudents.length > 0 ? Math.min(currentQueueIdx, classStudents.length - 1) : 0;
+  const currentStudent = classStudents[safeIdx];
+  const currentStudentFee = currentStudent
+    ? getFeeForStudent(currentStudent.id, currentStudent.classSec)
+    : { totalBilled: 0, totalPaid: 0, balanceDue: 0, status: 'Paid' as const };
 
-  const sampleStudent = classStudents[0] || students[0];
-  const sampleFee = sampleStudent ? getFeeForStudent(sampleStudent.id, sampleStudent.classSec) : { totalBilled: 45000, totalPaid: 15000, balanceDue: 30000, status: 'Overdue' };
+  const isCurrentSent = currentStudent ? sentStudentIds.includes(currentStudent.id) : false;
 
-  const handleBulkDispatch = async () => {
-    if (activeRemindersList.length === 0) {
-      showToast('No active students selected for fee reminder dispatch', 'warning');
-      return;
-    }
-
-    setIsSendingBulk(true);
-    setBulkProgress(15);
-    showToast(`Preparing ${feeReminderTargetRole} fee reminder broadcast for ${activeRemindersList.length} students in ${feeReminderClass}...`, 'info');
-
-    await new Promise(r => setTimeout(r, 600));
-    setBulkProgress(60);
-    await new Promise(r => setTimeout(r, 600));
-    setBulkProgress(100);
-
-    await new Promise(r => setTimeout(r, 400));
-    setIsSendingBulk(false);
-    showToast(
-      `Dispatched fee reminder popups & WhatsApp notices to ${activeRemindersList.length} ${feeReminderTargetRole} in ${feeReminderClass}!`,
-      'success'
+  const handleSendSingleReminder = (studentId: string, studentName: string, phone: string, balance: number, rollNo: string, classSec: string) => {
+    const cleanPhone = (phone || '919876543210').replace(/[^0-9]/g, '');
+    const message = encodeURIComponent(
+      `*URGENT: ACADEMIC FEE REMINDER - ${institution.name.toUpperCase()}*\n` +
+      `Dear Parent of *${studentName}* (Roll #${rollNo}, ${classSec}),\n\n` +
+      `This is an official advisory regarding the pending academic fee installment of *${institution.currencySymbol}${balance.toLocaleString()}*.\n` +
+      `Please clear the balance to ensure seamless access to examinations and student portal services.\n\n` +
+      `💳 Online Payment UPI ID: accounts@${institution.shortName.toLowerCase()}.org\n` +
+      `For queries, contact Accounts & Bursar Office.\n\n` +
+      `Warm regards,\n` +
+      `Accounts & Bursar, ${institution.shortName}`
     );
+
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    
+    // Mark as sent in state
+    if (!sentStudentIds.includes(studentId)) {
+      setSentStudentIds(prev => [...prev, studentId]);
+    }
+    
+    showToast(`Dispatched 1-by-1 fee reminder for ${studentName} (${safeIdx + 1} of ${classStudents.length})`, 'success');
+
+    // Automatically step to next student if available
+    if (safeIdx + 1 < classStudents.length) {
+      setCurrentQueueIdx(safeIdx + 1);
+    }
   };
 
-  const handleSendSingleReminder = (studentName: string, phone: string, balance: number) => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const message = encodeURIComponent(
-      `*URGENT: FEE PAYMENT REMINDER - ${institution.name.toUpperCase()}*\n` +
-      `Dear Parent of *${studentName}*,\n` +
-      `This is a kind reminder that an outstanding academic balance of *${institution.currencySymbol}${balance.toLocaleString()}* is pending for the current term.\n` +
-      `Please clear the dues to ensure uninterrupted examination access.\n` +
-      `UPI ID: accounts@${institution.shortName.toLowerCase()}.org\n` +
-      `Thank you,\n` +
-      `Accounts Bursar, ${institution.shortName}`
-    );
-    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+  const handleResetQueue = () => {
+    setSentStudentIds([]);
+    setCurrentQueueIdx(0);
+    showToast('Class fee reminder queue reset to first student', 'info');
   };
 
   return (
@@ -116,13 +113,13 @@ export const FeeReminderModal: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base sm:text-lg truncate">Class-Wise Fee Reminder Popup & Dispatch</h3>
+                <h3 className="font-bold text-base sm:text-lg truncate">Class-Wise Fee Reminder (One-by-One Dispatch)</h3>
                 <span className="text-[10px] font-bold bg-[#bdffdb] text-[#002113] px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                  Real-Time Due Alerts
+                  1-by-1 Verified
                 </span>
               </div>
               <p className="text-xs text-white/80 truncate">
-                Automated reminder popups for Students, Parents & Teachers across all academic tiers (KG to PhD).
+                Individual student-by-student verification & direct dispatch for {feeReminderClass}.
               </p>
             </div>
           </div>
@@ -139,16 +136,19 @@ export const FeeReminderModal: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 bg-[#faf8ff]">
           {/* Target Class & Audience Selectors */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Class Selector */}
+            {/* Class Selector (Class-Wise Focus) */}
             <div className="bg-white p-3 rounded-2xl border border-[#dae2fd] shadow-xs space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#737686] flex items-center gap-1">
                 <Layers className="w-3.5 h-3.5 text-[#004ac6]" />
-                Target Class & Tier
+                1. Select Specific Class
               </label>
               <select
                 value={feeReminderClass}
-                onChange={e => setFeeReminderClass(e.target.value)}
-                className="w-full h-9 bg-[#f2f3ff] rounded-xl text-xs font-bold text-[#131b2e] px-2.5 border border-[#dae2fd] focus:bg-white"
+                onChange={e => {
+                  setFeeReminderClass(e.target.value);
+                  setCurrentQueueIdx(0);
+                }}
+                className="w-full h-9 bg-[#f2f3ff] rounded-xl text-xs font-bold text-[#131b2e] px-2.5 border border-[#dae2fd] focus:bg-white cursor-pointer"
               >
                 <option value="ALL">All Classes & Sections ({classes.length})</option>
                 {classes.map(c => (
@@ -163,7 +163,7 @@ export const FeeReminderModal: React.FC = () => {
             <div className="bg-white p-3 rounded-2xl border border-[#dae2fd] shadow-xs space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#737686] flex items-center gap-1">
                 <Users className="w-3.5 h-3.5 text-[#007d55]" />
-                Reminder Target Audience
+                2. Reminder Recipient Role
               </label>
               <div className="grid grid-cols-3 gap-1 bg-[#f2f3ff] p-0.5 rounded-xl border border-[#dae2fd]">
                 {(['parents', 'students', 'teachers'] as const).map(role => (
@@ -192,7 +192,7 @@ export const FeeReminderModal: React.FC = () => {
             <div className="bg-white p-3 rounded-2xl border border-[#dae2fd] shadow-xs space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#737686] flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-[#ba1a1a]" />
-                Filter Defaulters
+                3. Defaulter Status Filter
               </label>
               <div className="grid grid-cols-3 gap-1 bg-[#f2f3ff] p-0.5 rounded-xl border border-[#dae2fd]">
                 {[
@@ -203,7 +203,10 @@ export const FeeReminderModal: React.FC = () => {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setStatusFilter(item.id as any)}
+                    onClick={() => {
+                      setStatusFilter(item.id as any);
+                      setCurrentQueueIdx(0);
+                    }}
                     className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                       statusFilter === item.id
                         ? 'bg-white text-[#131b2e] shadow-xs border border-[#dae2fd]'
@@ -217,49 +220,126 @@ export const FeeReminderModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Class Due Summary Card */}
-          <div className="bg-white p-4 rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#ffdad6] text-[#ba1a1a] flex items-center justify-center font-bold text-lg shrink-0">
-                {classStudents.length}
+          {/* CLASS-WISE ONE-BY-ONE INTERACTIVE DISPATCHER CARD */}
+          {classStudents.length > 0 && currentStudent ? (
+            <div className="bg-gradient-to-br from-white via-[#fcfdff] to-[#f2f6ff] rounded-2xl sm:rounded-3xl border-2 border-[#004ac6]/30 shadow-md p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#eaedff] pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 bg-[#004ac6] text-white text-[11px] font-bold rounded-lg shadow-xs">
+                    One-by-One Queue: {safeIdx + 1} of {classStudents.length}
+                  </span>
+                  <span className="text-xs font-bold text-[#131b2e]">
+                    Class: <strong className="text-[#004ac6]">{currentStudent.classSec}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentQueueIdx(prev => Math.max(0, prev - 1))}
+                    disabled={safeIdx === 0}
+                    className="p-1.5 rounded-lg bg-[#f2f3ff] hover:bg-[#eaedff] text-[#131b2e] disabled:opacity-40 border border-[#dae2fd]"
+                    title="Previous student in class"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentQueueIdx(prev => Math.min(classStudents.length - 1, prev + 1))}
+                    disabled={safeIdx === classStudents.length - 1}
+                    className="p-1.5 rounded-lg bg-[#f2f3ff] hover:bg-[#eaedff] text-[#131b2e] disabled:opacity-40 border border-[#dae2fd]"
+                    title="Next student in class"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetQueue}
+                    className="p-1.5 rounded-lg bg-[#f2f3ff] hover:bg-[#eaedff] text-[#737686] border border-[#dae2fd] text-xs font-bold flex items-center gap-1 ml-1"
+                    title="Reset class dispatch queue"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span className="text-[10px]">Reset</span>
+                  </button>
+                </div>
               </div>
-              <div>
-                <span className="text-xs font-bold text-[#131b2e]">
-                  {classStudents.length} Students with Pending Dues in {feeReminderClass}
-                </span>
-                <p className="text-[11px] text-[#737686] mt-0.5">
-                  Total Outstanding Balance: <strong className="text-[#ba1a1a]">{institution.currencySymbol}{totalClassDue.toLocaleString()}</strong>
-                </p>
+
+              {/* Active Student Profile & Fee Breakdown */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#dae2fd]">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <img
+                    src={currentStudent.avatarUrl}
+                    alt={currentStudent.name}
+                    className="w-14 h-14 rounded-2xl object-cover border-2 border-[#004ac6]/30 shadow-xs shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-extrabold text-base text-[#131b2e] truncate">
+                        {currentStudent.name}
+                      </h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-[#f2f3ff] text-[#004ac6] rounded-md border border-[#dae2fd]">
+                        Roll #{currentStudent.rollNo}
+                      </span>
+                      {isCurrentSent ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-[#bdffdb] text-[#002113] rounded-md flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Sent (1-by-1)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-[#fff3c4] text-[#7a5900] rounded-md">
+                          Pending Dispatch
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#737686] mt-0.5">
+                      Parent: <strong className="text-[#131b2e]">{currentStudent.parentName || 'Parent'}</strong> ({currentStudent.parentRelation || 'Guardian'}) • WhatsApp: <span className="font-mono text-[#007d55] font-bold">{currentStudent.parentWhatsApp || currentStudent.parentPhone}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Amount Due & Primary One-by-One Action */}
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0">
+                  <div className="text-left md:text-right">
+                    <span className="text-[10px] font-bold uppercase text-[#737686] block">Outstanding Balance</span>
+                    <span className="text-lg font-extrabold text-[#ba1a1a]">
+                      {institution.currencySymbol}{currentStudentFee.balanceDue.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSendSingleReminder(
+                        currentStudent.id,
+                        currentStudent.name,
+                        currentStudent.parentWhatsApp || currentStudent.parentPhone,
+                        currentStudentFee.balanceDue,
+                        currentStudent.rollNo,
+                        currentStudent.classSec
+                      )
+                    }
+                    className="h-11 px-4 bg-gradient-to-r from-[#007d55] to-[#004ac6] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md active:scale-95 transition-all hover:opacity-95"
+                    title="Send reminder to this specific student (one-by-one)"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Send Reminder (1-by-1)</span>
+                  </button>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowSimulatedPopup(true)}
-                className="px-3 py-2 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] border border-[#dae2fd] rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Simulate User Popup</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleBulkDispatch}
-                disabled={isSendingBulk || classStudents.length === 0}
-                className="px-4 py-2 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all disabled:opacity-50"
-              >
-                <Send className={`w-3.5 h-3.5 ${isSendingBulk ? 'animate-spin' : ''}`} />
-                <span>{isSendingBulk ? `Dispatching (${bulkProgress}%)...` : `Dispatch to All (${classStudents.length})`}</span>
-              </button>
+          ) : (
+            <div className="bg-white p-6 rounded-2xl border border-[#dae2fd] text-center space-y-1">
+              <CheckCircle2 className="w-8 h-8 text-[#007d55] mx-auto" />
+              <h4 className="text-sm font-bold text-[#131b2e]">All Dues Cleared in {feeReminderClass}!</h4>
+              <p className="text-xs text-[#737686]">There are no students with pending fee balances matching this filter.</p>
             </div>
-          </div>
+          )}
 
-          {/* Preview Tabs: Student In-App Alert / Parent WhatsApp / Teacher Roster */}
+          {/* Preview Tabs: WhatsApp / Student In-App Alert / Teacher Roster */}
           <div className="bg-white rounded-2xl sm:rounded-3xl p-4 border border-[#eaedff] shadow-xs space-y-3">
             <div className="flex items-center justify-between border-b border-[#eaedff] pb-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#131b2e]">Live Template Preview</span>
+                <span className="text-xs font-bold text-[#131b2e]">Live Template Preview (Individual Student Payload)</span>
                 <span className="text-[10px] text-[#737686]">Role: {feeReminderTargetRole.toUpperCase()}</span>
               </div>
               <div className="flex items-center gap-1 bg-[#f2f3ff] p-0.5 rounded-lg border border-[#dae2fd]">
@@ -294,24 +374,24 @@ export const FeeReminderModal: React.FC = () => {
             </div>
 
             {/* Preview Box 1: Parent WhatsApp Message */}
-            {activePreviewType === 'parent-whatsapp' && (
+            {activePreviewType === 'parent-whatsapp' && currentStudent && (
               <div className="bg-[#e7f8ef] p-3.5 rounded-2xl border border-[#b2e8ca] text-xs font-mono text-[#002113] space-y-1.5 leading-relaxed">
                 <div className="flex items-center justify-between border-b border-[#007d55]/20 pb-1 text-[#007d55] font-bold">
                   <span className="flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5" />
-                    Parent WhatsApp Broadcast Payload
+                    Parent WhatsApp 1-by-1 Message Preview
                   </span>
-                  <span className="text-[10px]">Instant 1-Click Dispatch</span>
+                  <span className="text-[10px]">{currentStudent.name}</span>
                 </div>
                 <p className="font-bold text-[#131b2e]">{institution.name.toUpperCase()} - ACADEMIC FEES ADVISORY</p>
-                <p>Dear {sampleStudent?.parentName || 'Parent'} ({sampleStudent?.parentRelation || 'Guardian'}),</p>
+                <p>Dear {currentStudent.parentName || 'Parent'} ({currentStudent.parentRelation || 'Guardian'}),</p>
                 <p>
-                  This is to notify you that the academic fee installment for *{sampleStudent?.name || 'Student'}* (Roll #{sampleStudent?.rollNo || '01'}, {sampleStudent?.classSec || feeReminderClass}) has a pending balance of *{institution.currencySymbol}{sampleFee.balanceDue.toLocaleString()}*.
+                  This is to notify you that the academic fee installment for *{currentStudent.name}* (Roll #{currentStudent.rollNo}, {currentStudent.classSec}) has a pending balance of *{institution.currencySymbol}{currentStudentFee.balanceDue.toLocaleString()}*.
                 </p>
                 <div className="bg-white/80 p-2.5 rounded-xl border border-[#007d55]/30 space-y-0.5 text-[11px]">
-                  <div>• Total Billed: {institution.currencySymbol}{sampleFee.totalBilled.toLocaleString()}</div>
-                  <div>• Total Paid: {institution.currencySymbol}{sampleFee.totalPaid.toLocaleString()}</div>
-                  <div>• <strong className="text-[#ba1a1a]">Balance Outstanding: {institution.currencySymbol}{sampleFee.balanceDue.toLocaleString()}</strong></div>
+                  <div>• Total Billed: {institution.currencySymbol}{currentStudentFee.totalBilled.toLocaleString()}</div>
+                  <div>• Total Paid: {institution.currencySymbol}{currentStudentFee.totalPaid.toLocaleString()}</div>
+                  <div>• <strong className="text-[#ba1a1a]">Balance Outstanding: {institution.currencySymbol}{currentStudentFee.balanceDue.toLocaleString()}</strong></div>
                   <div>• Due Date: End of Current Month</div>
                 </div>
                 <p className="text-[11px] text-[#007d55]">
@@ -322,7 +402,7 @@ export const FeeReminderModal: React.FC = () => {
             )}
 
             {/* Preview Box 2: Student In-App Alert Card */}
-            {activePreviewType === 'student-popup' && (
+            {activePreviewType === 'student-popup' && currentStudent && (
               <div className="bg-[#fff8f6] p-4 rounded-2xl border border-[#ffdad6] text-xs space-y-2">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#ffdad6] text-[#ba1a1a] flex items-center justify-center font-bold shrink-0">
@@ -334,12 +414,12 @@ export const FeeReminderModal: React.FC = () => {
                     </span>
                     <h4 className="text-sm font-bold text-[#131b2e]">Term Fee Clearance Pending</h4>
                     <p className="text-[11px] text-[#737686] mt-0.5">
-                      Dear {sampleStudent?.name}, your fee payment of {institution.currencySymbol}{sampleFee.balanceDue.toLocaleString()} is due. Please request your guardian to complete the online clearance before the upcoming examination hall ticket generation.
+                      Dear {currentStudent.name}, your fee payment of {institution.currencySymbol}{currentStudentFee.balanceDue.toLocaleString()} is due. Please request your guardian to complete the online clearance.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-[#ffdad6]/60 text-[11px]">
-                  <span className="text-[#737686]">Status: <strong className="text-[#ba1a1a]">{sampleFee.status}</strong></span>
+                  <span className="text-[#737686]">Status: <strong className="text-[#ba1a1a]">{currentStudentFee.status}</strong></span>
                   <button
                     type="button"
                     onClick={() => showToast('Redirected to Online Fee Payment Portal')}
@@ -356,7 +436,7 @@ export const FeeReminderModal: React.FC = () => {
               <div className="bg-[#f2f3ff] p-3.5 rounded-2xl border border-[#dae2fd] text-xs space-y-2">
                 <div className="flex items-center justify-between font-bold text-[#004ac6]">
                   <span className="flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4" />
+                    <ShieldCheck className="w-4 h-4" />
                     Class Incharge Action Roster ({feeReminderClass})
                   </span>
                   <span className="text-[10px] bg-[#dbe1ff] px-2 py-0.5 rounded text-[#00174b]">Principal Circular</span>
@@ -366,85 +446,66 @@ export const FeeReminderModal: React.FC = () => {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                   <div className="bg-white p-2 rounded-xl text-center border border-[#dae2fd]">
-                    <span className="text-[10px] text-[#737686] block">Total In Class</span>
-                    <span className="text-xs font-bold text-[#131b2e]">{students.length}</span>
-                  </div>
-                  <div className="bg-white p-2 rounded-xl text-center border border-[#dae2fd]">
-                    <span className="text-[10px] text-[#ba1a1a] block">Unpaid Dues</span>
-                    <span className="text-xs font-bold text-[#ba1a1a]">{classStudents.length}</span>
+                    <span className="text-[10px] text-[#737686] block">Unpaid Dues</span>
+                    <span className="text-xs font-bold text-[#ba1a1a]">{classStudents.length} Students</span>
                   </div>
                   <div className="bg-white p-2 rounded-xl text-center border border-[#dae2fd]">
                     <span className="text-[10px] text-[#737686] block">Class Due Total</span>
                     <span className="text-xs font-bold text-[#131b2e]">{institution.currencySymbol}{totalClassDue.toLocaleString()}</span>
                   </div>
                   <div className="bg-white p-2 rounded-xl text-center border border-[#dae2fd]">
-                    <span className="text-[10px] text-[#007d55] block">Mentor Support</span>
-                    <span className="text-xs font-bold text-[#007d55]">Active</span>
+                    <span className="text-[10px] text-[#737686] block">Sent (1-by-1)</span>
+                    <span className="text-xs font-bold text-[#007d55]">{sentStudentIds.length} Sent</span>
+                  </div>
+                  <div className="bg-white p-2 rounded-xl text-center border border-[#dae2fd]">
+                    <span className="text-[10px] text-[#737686] block">Pending Queue</span>
+                    <span className="text-xs font-bold text-[#ba1a1a]">{Math.max(0, classStudents.length - sentStudentIds.length)} Remaining</span>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Student Roster Table */}
+          {/* Student Roster Table (One-by-One Trigger per Row) */}
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#eaedff] overflow-hidden shadow-xs">
             <div className="p-3 sm:p-4 border-b border-[#eaedff] flex items-center justify-between">
               <span className="text-xs font-bold text-[#131b2e]">
-                Students Roster & Reminder Batch ({activeRemindersList.length} / {classStudents.length} Selected)
+                Class Roster: Individual Student Verification ({sentStudentIds.length} / {classStudents.length} Sent)
               </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setExcludedStudentIds([])}
-                  className="text-[10px] font-bold text-[#004ac6] hover:underline"
-                >
-                  Select All
-                </button>
-                <span>•</span>
-                <button
-                  type="button"
-                  onClick={() => setExcludedStudentIds(classStudents.map(s => s.id))}
-                  className="text-[10px] font-bold text-[#ba1a1a] hover:underline"
-                >
-                  Deselect All
-                </button>
-              </div>
+              <span className="text-[11px] font-bold text-[#737686]">
+                Click any row to load into 1-by-1 sender
+              </span>
             </div>
 
             <div className="overflow-x-auto max-h-60">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#faf8ff] border-b border-[#eaedff] text-[10px] uppercase font-bold text-[#737686]">
-                    <th className="py-2.5 px-3 text-center w-10">Include</th>
+                    <th className="py-2.5 px-3">#</th>
                     <th className="py-2.5 px-3">Student</th>
                     <th className="py-2.5 px-3">Class</th>
-                    <th className="py-2.5 px-3">Parent & Contact</th>
+                    <th className="py-2.5 px-3">Parent Contact</th>
                     <th className="py-2.5 px-3 text-right">Balance Due</th>
                     <th className="py-2.5 px-3 text-center">Status</th>
-                    <th className="py-2.5 px-3 text-right">Action</th>
+                    <th className="py-2.5 px-3 text-right">One-by-One Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#eaedff]">
-                  {classStudents.map(student => {
+                  {classStudents.map((student, idx) => {
                     const fee = getFeeForStudent(student.id, student.classSec);
-                    const isIncluded = !excludedStudentIds.includes(student.id);
+                    const isSent = sentStudentIds.includes(student.id);
+                    const isSelected = safeIdx === idx;
 
                     return (
-                      <tr key={student.id} className={`hover:bg-[#f2f3ff]/50 transition-colors ${!isIncluded ? 'opacity-50 bg-gray-50' : ''}`}>
-                        <td className="py-2.5 px-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isIncluded}
-                            onChange={() => {
-                              if (isIncluded) {
-                                setExcludedStudentIds(prev => [...prev, student.id]);
-                              } else {
-                                setExcludedStudentIds(prev => prev.filter(id => id !== student.id));
-                              }
-                            }}
-                            className="w-4 h-4 rounded text-[#004ac6] cursor-pointer"
-                            title="Add or remove student from fee reminder batch"
-                          />
+                      <tr
+                        key={student.id}
+                        onClick={() => setCurrentQueueIdx(idx)}
+                        className={`hover:bg-[#f2f3ff]/50 transition-colors cursor-pointer ${
+                          isSelected ? 'bg-[#dbe1ff]/30 ring-1 ring-[#004ac6]' : ''
+                        }`}
+                      >
+                        <td className="py-2.5 px-3 font-bold text-[#737686]">
+                          {idx + 1}
                         </td>
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-2">
@@ -470,22 +531,43 @@ export const FeeReminderModal: React.FC = () => {
                           {institution.currencySymbol}{fee.balanceDue.toLocaleString()}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              fee.status === 'Overdue' ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-[#fff3c4] text-[#7a5900]'
-                            }`}
-                          >
-                            {fee.status}
-                          </span>
+                          {isSent ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#bdffdb] text-[#002113] inline-flex items-center gap-1">
+                              <Check className="w-2.5 h-2.5" />
+                              Sent
+                            </span>
+                          ) : (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                fee.status === 'Overdue' ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'bg-[#fff3c4] text-[#7a5900]'
+                              }`}
+                            >
+                              {fee.status}
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-right">
                           <button
                             type="button"
-                            onClick={() => handleSendSingleReminder(student.name, student.parentWhatsApp, fee.balanceDue)}
-                            className="px-2.5 py-1 bg-[#007d55] text-white rounded-lg text-[10px] font-bold flex items-center gap-1 ml-auto shadow-xs active:scale-95"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleSendSingleReminder(
+                                student.id,
+                                student.name,
+                                student.parentWhatsApp,
+                                fee.balanceDue,
+                                student.rollNo,
+                                student.classSec
+                              );
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 ml-auto shadow-xs active:scale-95 ${
+                              isSent
+                                ? 'bg-[#f2f3ff] text-[#007d55] border border-[#bdffdb]'
+                                : 'bg-[#007d55] text-white hover:bg-[#006041]'
+                            }`}
                           >
                             <Send className="w-3 h-3" />
-                            <span>Remind</span>
+                            <span>{isSent ? 'Resend (1-by-1)' : 'Remind (1-by-1)'}</span>
                           </button>
                         </td>
                       </tr>
@@ -500,7 +582,7 @@ export const FeeReminderModal: React.FC = () => {
         {/* Modal Footer */}
         <div className="p-4 bg-white border-t border-[#eaedff] flex items-center justify-between shrink-0">
           <span className="text-xs text-[#737686]">
-            Total Targets: <strong>{classStudents.length} recipients</strong> across {feeReminderClass}
+            Class-wise Progress: <strong>{sentStudentIds.length} of {classStudents.length} sent individually</strong> in {feeReminderClass}
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -510,21 +592,31 @@ export const FeeReminderModal: React.FC = () => {
             >
               Close
             </button>
-            <button
-              type="button"
-              onClick={handleBulkDispatch}
-              disabled={isSendingBulk || classStudents.length === 0}
-              className="px-5 py-2 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold shadow-md active:scale-95 transition-all flex items-center gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Send Fee Reminders Now</span>
-            </button>
+            {currentStudent && (
+              <button
+                type="button"
+                onClick={() =>
+                  handleSendSingleReminder(
+                    currentStudent.id,
+                    currentStudent.name,
+                    currentStudent.parentWhatsApp || currentStudent.parentPhone,
+                    currentStudentFee.balanceDue,
+                    currentStudent.rollNo,
+                    currentStudent.classSec
+                  )
+                }
+                className="px-5 py-2 bg-gradient-to-r from-[#007d55] to-[#004ac6] text-white rounded-xl text-xs font-bold shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Next Reminder (1-by-1)</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Interactive Simulated In-App Popup Overlay */}
-      {showSimulatedPopup && (
+      {showSimulatedPopup && currentStudent && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in zoom-in-95 duration-150">
           <div className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl border border-[#ffdad6] text-left space-y-4">
             <div className="flex items-center justify-between">
@@ -550,20 +642,20 @@ export const FeeReminderModal: React.FC = () => {
               <p className="text-xs text-[#737686] mt-1 leading-relaxed">
                 Dear Parent / Student, the term tuition balance of{' '}
                 <strong className="text-[#ba1a1a]">
-                  {institution.currencySymbol}{sampleFee.balanceDue.toLocaleString()}
+                  {institution.currencySymbol}{currentStudentFee.balanceDue.toLocaleString()}
                 </strong>{' '}
-                for {sampleStudent?.name} ({sampleStudent?.classSec}) is pending clearance.
+                for {currentStudent.name} ({currentStudent.classSec}) is pending clearance.
               </p>
             </div>
 
             <div className="bg-[#faf8ff] p-3 rounded-2xl border border-[#dae2fd] space-y-1.5 text-xs">
               <div className="flex justify-between">
                 <span className="text-[#737686]">Student Roll:</span>
-                <span className="font-bold text-[#131b2e]">#{sampleStudent?.rollNo}</span>
+                <span className="font-bold text-[#131b2e]">#{currentStudent.rollNo}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#737686]">Class / Section:</span>
-                <span className="font-bold text-[#131b2e]">{sampleStudent?.classSec}</span>
+                <span className="font-bold text-[#131b2e]">{currentStudent.classSec}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#737686]">UPI ID:</span>
