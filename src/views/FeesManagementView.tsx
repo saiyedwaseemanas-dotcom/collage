@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Student, FeeStructure, FeePaymentTransaction } from '../types';
+import { Student, FeeStructure, FeePaymentTransaction, ClassLevelCategory } from '../types';
 import {
   Wallet,
   CreditCard,
@@ -23,6 +23,11 @@ import {
   Clock,
   ShieldCheck,
   BellRing,
+  RefreshCw,
+  UserPlus,
+  Trash2,
+  Edit3,
+  Check,
 } from 'lucide-react';
 
 export const FeesManagementView: React.FC = () => {
@@ -40,12 +45,19 @@ export const FeesManagementView: React.FC = () => {
     showToast,
     openDispatchModal,
     openFeeReminderModal,
+    addStudent,
+    deleteStudent,
+    addClass,
+    addFeeStructure,
+    updateFeeStructure,
+    transferAllDataToGoogleSheets,
+    isTransferringAllToSheets,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'ledger' | 'structures' | 'transactions'>('ledger');
   const [selectedClassFilter, setSelectedClassFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDefaultersOnly, setFilterDefaultersOnly] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
 
   // Collect Fee Modal state
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -57,6 +69,32 @@ export const FeesManagementView: React.FC = () => {
 
   // Receipt Modal state
   const [viewingReceipt, setViewingReceipt] = useState<FeePaymentTransaction | null>(null);
+
+  // Add Student Modal State
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentRoll, setNewStudentRoll] = useState('');
+  const [newStudentClass, setNewStudentClass] = useState(classes[0]?.name || 'Class 10-A');
+  const [newParentName, setNewParentName] = useState('');
+  const [newParentPhone, setNewParentPhone] = useState('');
+  const [newParentWhatsApp, setNewParentWhatsApp] = useState('');
+
+  // Edit Fee Structure Modal State
+  const [isEditStructureModalOpen, setIsEditStructureModalOpen] = useState(false);
+  const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
+  const [editTuition, setEditTuition] = useState(0);
+  const [editLab, setEditLab] = useState(0);
+  const [editExam, setEditExam] = useState(0);
+  const [editTransport, setEditTransport] = useState(0);
+
+  // Add Class & Class-wise Fees Modal State
+  const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
+  const [newClassNameField, setNewClassNameField] = useState('');
+  const [newClassCategory, setNewClassCategory] = useState<ClassLevelCategory>('Secondary (9-10)');
+  const [newClassTuition, setNewClassTuition] = useState(25000);
+  const [newClassLab, setNewClassLab] = useState(5000);
+  const [newClassExam, setNewClassExam] = useState(3000);
+  const [newClassTransport, setNewClassTransport] = useState(8000);
 
   // Calculate high-level summary KPIs
   const totalBilled = students.reduce((acc, s) => {
@@ -77,16 +115,21 @@ export const FeesManagementView: React.FC = () => {
     return fee.balanceDue > 0;
   }).length;
 
+  const fullyPaidCount = students.filter(s => {
+    const fee = getFeeForStudent(s.id, s.classSec);
+    return fee.balanceDue <= 0;
+  }).length;
+
   // Filter students for the ledger
   const filteredStudents = students.filter(s => {
     if (selectedClassFilter !== 'ALL') {
       const matchName = s.classSec === selectedClassFilter || s.gradeLevel === selectedClassFilter.replace('Class ', '');
       if (!matchName) return false;
     }
-    if (filterDefaultersOnly) {
-      const fee = getFeeForStudent(s.id, s.classSec);
-      if (fee.balanceDue <= 0) return false;
-    }
+    const fee = getFeeForStudent(s.id, s.classSec);
+    if (statusFilter === 'pending' && fee.balanceDue <= 0) return false;
+    if (statusFilter === 'paid' && fee.balanceDue > 0) return false;
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchQuery = s.name.toLowerCase().includes(q) || s.rollNo.includes(q) || (s.parentName && s.parentName.toLowerCase().includes(q));
@@ -94,6 +137,116 @@ export const FeesManagementView: React.FC = () => {
     }
     return true;
   });
+
+  const handleOpenAddStudent = () => {
+    setNewStudentName('');
+    setNewStudentRoll(`DPS-${Math.floor(1000 + Math.random() * 9000)}`);
+    setNewStudentClass(selectedClassFilter !== 'ALL' ? selectedClassFilter : (classes[0]?.name || 'Class 10-A'));
+    setNewParentName('');
+    setNewParentPhone('');
+    setNewParentWhatsApp('');
+    setIsAddStudentModalOpen(true);
+  };
+
+  const handleSaveNewStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStudentName.trim() || !newStudentRoll.trim()) {
+      showToast('Please provide student name and roll number', 'warning');
+      return;
+    }
+
+    addStudent({
+      id: `std-${Date.now()}`,
+      name: newStudentName.trim(),
+      rollNo: newStudentRoll.trim(),
+      classSec: newStudentClass,
+      gradeLevel: newStudentClass.replace(/^Class\s*/i, ''),
+      parentName: newParentName.trim() || 'Parent/Guardian',
+      parentRelation: 'Father',
+      parentPhone: newParentPhone.trim() || '9876543210',
+      parentWhatsApp: newParentWhatsApp.trim() || newParentPhone.trim() || '9876543210',
+      attendancePct: 100,
+      totalPresent: 1,
+      totalWorkingDays: 1,
+      todayStatus: 'P',
+      avatarUrl: `https://images.unsplash.com/photo-1534528741775?w=150&auto=format&fit=crop&q=80`,
+      marks: {
+        ut2: { math: 45, sci: 45, eng: 45 },
+      },
+    });
+
+    setIsAddStudentModalOpen(false);
+    showToast(`Student ${newStudentName} successfully enrolled into ${newStudentClass}!`);
+  };
+
+  const handleDeleteStudentPrompt = (student: Student) => {
+    if (confirm(`Are you sure you want to remove ${student.name} (Roll #${student.rollNo}) from the student roster and fee ledger?`)) {
+      deleteStudent(student.id);
+      showToast(`${student.name} removed from active roster`, 'warning');
+    }
+  };
+
+  const handleOpenEditStructure = (structure: FeeStructure) => {
+    setEditingStructure(structure);
+    setEditTuition(structure.tuitionFee);
+    setEditLab(structure.labActivityFee);
+    setEditExam(structure.examFee);
+    setEditTransport(structure.transportFee);
+    setIsEditStructureModalOpen(true);
+  };
+
+  const handleSaveStructureEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStructure) return;
+
+    const total = editTuition + editLab + editExam + editTransport;
+    updateFeeStructure(editingStructure.id, {
+      tuitionFee: editTuition,
+      labActivityFee: editLab,
+      examFee: editExam,
+      transportFee: editTransport,
+      totalAnnualFee: total,
+    });
+
+    setIsEditStructureModalOpen(false);
+    showToast(`Updated fee schedule for ${editingStructure.className} (${institution.currencySymbol}${total.toLocaleString()})`);
+  };
+
+  const handleSaveNewClassWithFees = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClassNameField.trim()) {
+      showToast('Please provide a class name', 'warning');
+      return;
+    }
+
+    const classNameClean = newClassNameField.trim();
+    // Add class to system
+    addClass({
+      id: `cls-${Date.now()}`,
+      name: classNameClean,
+      category: newClassCategory,
+      totalEnrolled: 0,
+      roomNo: 'Room TBA',
+    });
+
+    // Add corresponding fee structure
+    const total = newClassTuition + newClassLab + newClassExam + newClassTransport;
+    addFeeStructure({
+      id: `fee-${Date.now()}`,
+      className: classNameClean,
+      category: newClassCategory,
+      tuitionFee: newClassTuition,
+      labActivityFee: newClassLab,
+      examFee: newClassExam,
+      transportFee: newClassTransport,
+      totalAnnualFee: total,
+      frequency: 'Annual',
+    });
+
+    setIsAddClassModalOpen(false);
+    setNewClassNameField('');
+    showToast(`Added ${classNameClean} with customized fee structure!`);
+  };
 
   const handleOpenCollectFee = (student: Student) => {
     const fee = getFeeForStudent(student.id, student.classSec);
@@ -169,13 +322,28 @@ export const FeesManagementView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Module 7: Google Sheets Auto Sync */}
+          <button
+            onClick={async () => {
+              await transferAllDataToGoogleSheets();
+              showToast('Google Sheets fee ledger synchronized successfully!', 'success');
+            }}
+            disabled={isTransferringAllToSheets}
+            className="flex-1 sm:flex-initial h-10 px-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            type="button"
+            title="Auto sync all fee records and balances to Google Sheets"
+          >
+            <RefreshCw className={`w-4 h-4 text-emerald-600 ${isTransferringAllToSheets ? 'animate-spin' : ''}`} />
+            <span>{isTransferringAllToSheets ? 'Syncing...' : 'Auto Sync Sheets'}</span>
+          </button>
+
           <button
             onClick={() => openFeeReminderModal(selectedClassFilter !== 'ALL' ? selectedClassFilter : undefined, 'parents')}
             className="flex-1 sm:flex-initial h-10 px-3.5 bg-[#ffdad6] hover:bg-[#ffc2bb] text-[#ba1a1a] border border-[#ffdad6] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
             type="button"
           >
             <BellRing className="w-4 h-4 text-[#ba1a1a]" />
-            <span>🔔 Class Fee Reminders Popup</span>
+            <span>🔔 Fee Reminder</span>
           </button>
 
           <button
@@ -183,7 +351,7 @@ export const FeesManagementView: React.FC = () => {
               openDispatchModal({
                 title: 'Fee Collection & Defaulter Audit Report',
                 reportCategory: 'fee-defaulters',
-                defaultFormat: 'excel',
+                defaultFormat: 'sheets',
                 defaultRecipientType: 'principal',
               })
             }
@@ -191,7 +359,7 @@ export const FeesManagementView: React.FC = () => {
             type="button"
           >
             <FileSpreadsheet className="w-4 h-4 text-[#007d55]" />
-            <span>Export Excel</span>
+            <span>Google Sheets</span>
           </button>
 
           <button
@@ -331,9 +499,9 @@ export const FeesManagementView: React.FC = () => {
       {/* TAB 1: STUDENT FEE LEDGER */}
       {activeTab === 'ledger' && (
         <div className="space-y-3">
-          {/* Controls: Class Selector, Search, Defaulters Toggle */}
-          <div className="bg-white p-3 rounded-2xl border border-[#eaedff] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+          {/* Controls: Class Selector, Status Filter, Add Student, Search */}
+          <div className="bg-white p-3 rounded-2xl border border-[#eaedff] shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Class Dropdown */}
               <div className="flex items-center gap-1.5 bg-[#f2f3ff] px-2.5 py-1.5 rounded-xl border border-[#dae2fd]">
                 <Layers className="w-3.5 h-3.5 text-[#004ac6] shrink-0" />
@@ -352,28 +520,59 @@ export const FeesManagementView: React.FC = () => {
                 </select>
               </div>
 
-              {/* Defaulters Filter Toggle */}
+              {/* Status Filter Segmented Controls */}
+              <div className="flex items-center gap-1 p-0.5 bg-[#f2f3ff] rounded-xl border border-[#dae2fd]">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  className={`h-7 px-2.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+                    statusFilter === 'all'
+                      ? 'bg-white text-[#004ac6] shadow-xs'
+                      : 'text-[#737686] hover:text-[#131b2e]'
+                  }`}
+                >
+                  All ({students.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('pending')}
+                  className={`h-7 px-2.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 ${
+                    statusFilter === 'pending'
+                      ? 'bg-[#ba1a1a] text-white shadow-xs'
+                      : 'text-[#ba1a1a] hover:bg-[#ffdad6]/60'
+                  }`}
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Pending ({defaultersCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('paid')}
+                  className={`h-7 px-2.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 ${
+                    statusFilter === 'paid'
+                      ? 'bg-[#007d55] text-white shadow-xs'
+                      : 'text-[#007d55] hover:bg-[#bdffdb]/60'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Paid ({fullyPaidCount})</span>
+                </button>
+              </div>
+
+              {/* Add Student to Class Button */}
               <button
-                onClick={() => setFilterDefaultersOnly(prev => !prev)}
-                className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
-                  filterDefaultersOnly
-                    ? 'bg-[#ba1a1a] text-white shadow-xs'
-                    : 'bg-[#ffdad6] text-[#93000a] hover:bg-[#ffdad6]/80'
-                }`}
                 type="button"
+                onClick={handleOpenAddStudent}
+                className="h-8 px-3 bg-[#004ac6] hover:bg-[#1a5fd8] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                title="Enroll a new student into class and set fees"
               >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span>Defaulters Only</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                  filterDefaultersOnly ? 'bg-white text-[#ba1a1a]' : 'bg-[#ba1a1a] text-white'
-                }`}>
-                  {defaultersCount}
-                </span>
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Add Student</span>
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="relative min-w-[220px]">
+            <div className="relative min-w-[200px] sm:min-w-[240px]">
               <Search className="w-4 h-4 text-[#737686] absolute left-3 top-2.5" />
               <input
                 type="text"
@@ -387,11 +586,11 @@ export const FeesManagementView: React.FC = () => {
 
           {/* Students Table */}
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-[#f2f3ff] border-b border-[#dae2fd] text-[11px] font-bold text-[#737686] uppercase tracking-wider">
-                    <th className="py-3 px-3 sm:px-4">Student</th>
+                    <th className="py-3 px-3 sm:px-4 sticky left-0 bg-[#f2f3ff] z-20">Student</th>
                     <th className="py-3 px-2 sm:px-3">Class & Section</th>
                     <th className="py-3 px-2 sm:px-3 text-right">Total Billed</th>
                     <th className="py-3 px-2 sm:px-3 text-right">Paid Amount</th>
@@ -413,7 +612,7 @@ export const FeesManagementView: React.FC = () => {
                       const isDefaulter = fee.balanceDue > 0;
                       return (
                         <tr key={student.id} className="hover:bg-[#faf8ff] transition-colors">
-                          <td className="py-3 px-3 sm:px-4">
+                          <td className="py-3 px-3 sm:px-4 sticky left-0 bg-white z-10">
                             <div className="flex items-center gap-2.5">
                               <img
                                 src={student.avatarUrl}
@@ -421,7 +620,9 @@ export const FeesManagementView: React.FC = () => {
                                 className="w-8 h-8 rounded-xl object-cover ring-1 ring-[#dae2fd]"
                               />
                               <div className="min-w-0">
-                                <span className="font-bold text-[#131b2e] block truncate">{student.name}</span>
+                                <span className="font-bold text-[#131b2e] block truncate max-w-[140px]">
+                                  {student.name}
+                                </span>
                                 <span className="text-[10px] text-[#737686] font-mono">Roll #{student.rollNo}</span>
                               </div>
                             </div>
@@ -486,6 +687,15 @@ export const FeesManagementView: React.FC = () => {
                                   <MessageSquare className="w-3.5 h-3.5" />
                                 </button>
                               )}
+
+                              <button
+                                onClick={() => handleDeleteStudentPrompt(student)}
+                                className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600 flex items-center justify-center transition-all"
+                                type="button"
+                                title="Remove student from roster & fee ledger"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -502,14 +712,24 @@ export const FeesManagementView: React.FC = () => {
       {/* TAB 2: CLASS FEE STRUCTURES */}
       {activeTab === 'structures' && (
         <div className="space-y-3">
-          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs flex items-center justify-between">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-[#eaedff] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-sm sm:text-base text-[#131b2e]">Academic Fee Schedules (Pre-Primary to Ph.D)</h3>
               <p className="text-xs text-[#737686]">Annual tuition, laboratory, exam, and activity fees breakdown per level</p>
             </div>
-            <span className="bg-[#f2f3ff] text-[#004ac6] text-xs font-bold px-3 py-1 rounded-xl">
-              {feeStructures.length} Class Structures
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="bg-[#f2f3ff] text-[#004ac6] text-xs font-bold px-3 py-1 rounded-xl">
+                {feeStructures.length} Class Structures
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsAddClassModalOpen(true)}
+                className="h-9 px-3.5 bg-[#004ac6] hover:bg-[#1a5fd8] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Class & Set Fees</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -558,11 +778,21 @@ export const FeesManagementView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#eaedff] flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#737686]">Total Annual</span>
-                  <span className="text-base sm:text-lg font-extrabold text-[#004ac6] font-mono">
-                    {institution.currencySymbol}{structure.totalAnnualFee.toLocaleString()}
-                  </span>
+                <div className="space-y-2 pt-2 border-t border-[#eaedff]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#737686]">Total Annual</span>
+                    <span className="text-base sm:text-lg font-extrabold text-[#004ac6] font-mono">
+                      {institution.currencySymbol}{structure.totalAnnualFee.toLocaleString()}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditStructure(structure)}
+                    className="w-full py-2 bg-[#f2f3ff] hover:bg-[#eaedff] text-[#004ac6] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Fee Structure</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -906,6 +1136,350 @@ export const FeesManagementView: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ADD STUDENT MODAL */}
+      {isAddStudentModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                <h3 className="font-bold text-base">Enroll New Student</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddStudentModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewStudent} className="p-4 sm:p-5 space-y-3 text-xs">
+              <div>
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Student Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newStudentName}
+                  onChange={e => setNewStudentName(e.target.value)}
+                  placeholder="e.g. Aarav Sharma"
+                  className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-semibold focus:bg-white outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Roll Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newStudentRoll}
+                    onChange={e => setNewStudentRoll(e.target.value)}
+                    placeholder="DPS-1029"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Assigned Class *</label>
+                  <select
+                    value={newStudentClass}
+                    onChange={e => setNewStudentClass(e.target.value)}
+                    className="w-full h-10 px-2 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  >
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent / Guardian Name</label>
+                <input
+                  type="text"
+                  value={newParentName}
+                  onChange={e => setNewParentName(e.target.value)}
+                  placeholder="e.g. Mr. Rajesh Sharma"
+                  className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs focus:bg-white outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Parent Phone</label>
+                  <input
+                    type="tel"
+                    value={newParentPhone}
+                    onChange={e => setNewParentPhone(e.target.value)}
+                    placeholder="9876543210"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    value={newParentWhatsApp}
+                    onChange={e => setNewParentWhatsApp(e.target.value)}
+                    placeholder="9876543210"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-mono focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStudentModalOpen(false)}
+                  className="h-9 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#004ac6] hover:bg-[#1a5fd8] text-white rounded-xl font-bold text-xs shadow-xs active:scale-95"
+                >
+                  Save & Enroll
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT FEE STRUCTURE MODAL */}
+      {isEditStructureModalOpen && editingStructure && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base">Edit Fee Structure</h3>
+                <p className="text-xs text-white/80">{editingStructure.className} ({editingStructure.category})</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditStructureModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStructureEdit} className="p-4 sm:p-5 space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                    Tuition Fee ({institution.currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editTuition}
+                    onChange={e => setEditTuition(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                    Lab / Activity ({institution.currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editLab}
+                    onChange={e => setEditLab(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                    Exam Fee ({institution.currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editExam}
+                    onChange={e => setEditExam(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">
+                    Transport ({institution.currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editTransport}
+                    onChange={e => setEditTransport(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#f2f3ff] rounded-xl flex items-center justify-between border border-[#dae2fd]">
+                <span className="font-bold text-[#737686]">Calculated Total Annual:</span>
+                <span className="text-base font-extrabold text-[#004ac6] font-mono">
+                  {institution.currencySymbol}{(editTuition + editLab + editExam + editTransport).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditStructureModalOpen(false)}
+                  className="h-9 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#004ac6] hover:bg-[#1a5fd8] text-white rounded-xl font-bold text-xs shadow-xs active:scale-95"
+                >
+                  Save Schedule
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD NEW CLASS & SET FEES MODAL */}
+      {isAddClassModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-md rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white p-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base">Add New Class & Set Fees</h3>
+                <p className="text-xs text-white/80">Configure academic level & class-wise fees</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddClassModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveNewClassWithFees} className="p-4 sm:p-5 space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Class Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newClassNameField}
+                    onChange={e => setNewClassNameField(e.target.value)}
+                    placeholder="e.g. Class 11-Science"
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Tier / Category</label>
+                  <select
+                    value={newClassCategory}
+                    onChange={e => setNewClassCategory(e.target.value as any)}
+                    className="w-full h-10 px-2 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-semibold focus:bg-white outline-none"
+                  >
+                    <option value="Pre-Primary / Kindergarten">Pre-Primary / Kindergarten</option>
+                    <option value="Primary (1-5)">Primary (1-5)</option>
+                    <option value="Middle School (6-8)">Middle School (6-8)</option>
+                    <option value="Secondary (9-10)">Secondary (9-10)</option>
+                    <option value="Higher Secondary (11-12)">Higher Secondary (11-12)</option>
+                    <option value="Undergraduate (UG)">Undergraduate (UG)</option>
+                    <option value="Postgraduate (PG)">Postgraduate (PG)</option>
+                    <option value="Doctorate (Ph.D)">Doctorate (Ph.D)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Tuition Fee</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newClassTuition}
+                    onChange={e => setNewClassTuition(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Lab / Activity</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newClassLab}
+                    onChange={e => setNewClassLab(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Exam Fee</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newClassExam}
+                    onChange={e => setNewClassExam(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Transport Fee</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newClassTransport}
+                    onChange={e => setNewClassTransport(parseFloat(e.target.value) || 0)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] font-mono font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#f2f3ff] rounded-xl flex items-center justify-between border border-[#dae2fd]">
+                <span className="font-bold text-[#737686]">Total Annual Schedule:</span>
+                <span className="text-base font-extrabold text-[#004ac6] font-mono">
+                  {institution.currencySymbol}{(newClassTuition + newClassLab + newClassExam + newClassTransport).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddClassModalOpen(false)}
+                  className="h-9 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="h-9 px-4 bg-[#004ac6] hover:bg-[#1a5fd8] text-white rounded-xl font-bold text-xs shadow-xs active:scale-95"
+                >
+                  Create Class & Set Fees
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

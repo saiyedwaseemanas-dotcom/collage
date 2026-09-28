@@ -22,6 +22,7 @@ import {
   Wallet,
   Calendar,
   BellRing,
+  Video,
 } from 'lucide-react';
 
 export const NavigationDrawer: React.FC = () => {
@@ -39,10 +40,13 @@ export const NavigationDrawer: React.FC = () => {
     institution,
     openDispatchModal,
     openFeeReminderModal,
+    activeAcademicYear,
+    setIsAcademicSessionModalOpen,
   } = useApp();
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'live_class', label: 'Live Class & Recordings', icon: <Video className="w-5 h-5" />, badge: 'LIVE' },
     { id: 'students', label: 'Students Database', icon: <Users className="w-5 h-5" /> },
     { id: 'teachers', label: 'Faculty & Staff Roster', icon: <UserCheck className="w-5 h-5" /> },
     { id: 'attendance', label: 'Daily Attendance Ledger', icon: <CalendarCheck className="w-5 h-5" /> },
@@ -109,26 +113,29 @@ export const NavigationDrawer: React.FC = () => {
 
         {/* Academic Session Selector */}
         <div className="p-3">
-          <div className="bg-[#f2f3ff] p-3 rounded-2xl border border-[#dae2fd]/50">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#737686] block mb-1">
-              Academic Session
-            </span>
+          <div
+            onClick={() => {
+              setIsDrawerOpen(false);
+              setIsAcademicSessionModalOpen(true);
+            }}
+            className="bg-[#f2f3ff] hover:bg-[#eaedff] p-3 rounded-2xl border border-[#dae2fd]/50 cursor-pointer transition-colors"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#737686]">
+                Academic Year (Filter)
+              </span>
+              <span className="text-[9px] bg-[#004ac6] text-white font-bold px-1.5 py-0.2 rounded-full">
+                Active
+              </span>
+            </div>
             <div className="flex items-center justify-between text-xs font-semibold text-[#131b2e]">
               <span className="flex items-center gap-1.5 truncate">
                 <GraduationCap className="w-4 h-4 text-[#004ac6] shrink-0" />
-                <span className="truncate">{academicSession}</span>
+                <span className="truncate font-bold text-sm text-[#004ac6]">{activeAcademicYear}</span>
               </span>
-              <button
-                onClick={() => {
-                  const nextSession = academicSession.includes('Term 2') ? '2024 - 2025 (Term 1)' : '2024 - 2025 (Term 2)';
-                  setAcademicSession(nextSession);
-                  showToast(`Session switched to ${nextSession}`);
-                }}
-                className="p-1 hover:bg-[#dae2fd] rounded-lg text-[#737686] transition-colors shrink-0"
-                title="Toggle Term"
-              >
-                <ChevronsUpDown className="w-4 h-4" />
-              </button>
+              <span className="text-[10px] text-[#004ac6] font-bold hover:underline">
+                Manage
+              </span>
             </div>
           </div>
         </div>

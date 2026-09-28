@@ -43,12 +43,32 @@ export const TeachersRegisterView: React.FC = () => {
     submitLeaveApplication,
     reviewLeaveApplication,
     institution,
+    staffShifts,
+    addStaffShift,
+    updateStaffShift,
+    deleteStaffShift,
+    recordFacultyCheckInOut,
+    userRole,
+    activeAcademicYear,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'roster' | 'attendance' | 'leaves' | 'payroll'>('roster');
+  const [activeTab, setActiveTab] = useState<'roster' | 'attendance' | 'shifts' | 'leaves' | 'payroll'>('roster');
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewTeacher, setIsNewTeacher] = useState(false);
+
+  // Entry & Exit Time state
+  const [entryTime, setEntryTime] = useState('08:30 AM');
+  const [exitTime, setExitTime] = useState('04:00 PM');
+
+  // Staff Shift Modal State
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const [shiftTeacherId, setShiftTeacherId] = useState(teachers[0]?.id || '');
+  const [shiftType, setShiftType] = useState<'Morning Shift' | 'Day Shift' | 'Evening / Lab Shift'>('Day Shift');
+  const [shiftIn, setShiftIn] = useState('08:30 AM');
+  const [shiftOut, setShiftOut] = useState('04:00 PM');
+  const [shiftRoom, setShiftRoom] = useState('Staff Room 201');
+  const [shiftDays, setShiftDays] = useState('Monday - Friday');
 
   // Principal Authorization state for altering attendance
   const [isPrincipalAuthorized, setIsPrincipalAuthorized] = useState(true);
@@ -226,11 +246,22 @@ export const TeachersRegisterView: React.FC = () => {
         </div>
       </div>
 
+      {/* Faculty Automatic Session Lock Banner */}
+      {userRole === 'Teacher / Faculty' && (
+        <div className="bg-[#fff8e1] border border-[#ffe082] p-3 rounded-2xl flex items-center gap-2.5 text-xs text-[#b78103]">
+          <Clock className="w-4 h-4 shrink-0 text-[#f57f17]" />
+          <div>
+            <span className="font-bold">Faculty Automatic Session: </span>
+            <span>You are logged in under active academic year ({activeAcademicYear}). Manual session changes are locked for faculty.</span>
+          </div>
+        </div>
+      )}
+
       {/* Segmented View Mode Controller */}
-      <div className="p-1 bg-[#eaedff] rounded-xl sm:rounded-2xl flex items-center shadow-inner">
+      <div className="p-1 bg-[#eaedff] rounded-xl sm:rounded-2xl flex items-center shadow-inner overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('roster')}
-          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
+          className={`flex-1 min-w-[95px] sm:min-w-0 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
             activeTab === 'roster'
               ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
@@ -243,7 +274,7 @@ export const TeachersRegisterView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('attendance')}
-          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
+          className={`flex-1 min-w-[110px] sm:min-w-0 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
             activeTab === 'attendance'
               ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
@@ -254,10 +285,24 @@ export const TeachersRegisterView: React.FC = () => {
           <span className="truncate">Attendance Sheet</span>
         </button>
 
+        {/* STAFF SHIFT MANAGEMENT TAB */}
+        <button
+          onClick={() => setActiveTab('shifts')}
+          className={`flex-1 min-w-[95px] sm:min-w-0 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
+            activeTab === 'shifts'
+              ? 'bg-white text-[#004ac6] shadow-xs'
+              : 'text-[#434655] hover:text-[#131b2e]'
+          }`}
+          type="button"
+        >
+          <Clock className="w-4 h-4 shrink-0" />
+          <span className="truncate">Staff Shifts</span>
+        </button>
+
         {/* TEACHER LEAVE APPROVAL TAB */}
         <button
           onClick={() => setActiveTab('leaves')}
-          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
+          className={`flex-1 min-w-[95px] sm:min-w-0 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
             activeTab === 'leaves'
               ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
@@ -275,7 +320,7 @@ export const TeachersRegisterView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('payroll')}
-          className={`flex-1 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
+          className={`flex-1 min-w-[95px] sm:min-w-0 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0 ${
             activeTab === 'payroll'
               ? 'bg-white text-[#004ac6] shadow-xs'
               : 'text-[#434655] hover:text-[#131b2e]'
@@ -449,7 +494,8 @@ export const TeachersRegisterView: React.FC = () => {
                     <th className="py-3 px-3 sm:px-4">Faculty Member</th>
                     <th className="py-3 px-2">Designation</th>
                     <th className="py-3 px-2">Today's Status</th>
-                    <th className="py-3 px-2">Punch Time</th>
+                    <th className="py-3 px-2">Entry Time</th>
+                    <th className="py-3 px-2">Exit Time</th>
                     <th className="py-3 px-3 sm:px-4 text-right">Alter Attendance (Principal Auth)</th>
                   </tr>
                 </thead>
@@ -482,6 +528,12 @@ export const TeachersRegisterView: React.FC = () => {
                         >
                           {t.status === 'In Campus' ? 'Present (P)' : t.status === 'On Duty (Exam)' ? 'On Duty (OD)' : 'On Leave (L)'}
                         </span>
+                      </td>
+                      <td className="py-3 px-2 text-xs font-mono font-bold text-[#007d55]">
+                        {t.biometricCheckIn || '08:30 AM'}
+                      </td>
+                      <td className="py-3 px-2 text-xs font-mono font-bold text-[#434655]">
+                        {t.scheduledOut || '04:00 PM'}
                       </td>
                       <td className="py-3 px-2 font-mono text-[11px] text-[#007d55] font-semibold">
                         {t.biometricCheckIn || '08:00 AM'}

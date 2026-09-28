@@ -30,6 +30,10 @@ import {
   MessageSquare,
   QrCode,
   ShieldCheck,
+  UserMinus,
+  UserPlus,
+  Ban,
+  AlertCircle,
 } from 'lucide-react';
 
 export const MarksView: React.FC = () => {
@@ -54,10 +58,13 @@ export const MarksView: React.FC = () => {
     institution,
     openDispatchModal,
     setActiveTab,
+    removeStudentFromExam,
+    restoreStudentToExam,
   } = useApp();
 
   const [activeSubView, setActiveSubView] = useState<'marksheet' | 'analytics' | 'report'>('marksheet');
   const [selectedSubjectScope, setSelectedSubjectScope] = useState<string>('All');
+  const [examStatusFilter, setExamStatusFilter] = useState<'all' | 'active' | 'excluded'>('all');
   
   // Custom Exam & Subject Modal States
   const [isAddExamModalOpen, setIsAddExamModalOpen] = useState(false);
@@ -121,9 +128,25 @@ export const MarksView: React.FC = () => {
     return 40;
   };
 
-  // Compute student aggregates
+  // Compute student aggregates with exclusion awareness
   const studentStats = useMemo(() => {
     return classStudents.map(student => {
+      const isExcluded = Boolean(
+        student.excludedFromExams?.includes(examKey) ||
+        student.excludedFromExams?.includes(selectedExam)
+      );
+
+      if (isExcluded) {
+        return {
+          student,
+          total: 0,
+          pct: 0,
+          grade: 'EXCLUDED',
+          gradeBadgeClass: 'bg-red-50 text-red-600 border border-red-200',
+          isExcluded: true,
+        };
+      }
+
       let total = 0;
       examSubjects.forEach(sub => {
         total += getScore(student, sub);
@@ -154,13 +177,14 @@ export const MarksView: React.FC = () => {
         pct,
         grade,
         gradeBadgeClass,
+        isExcluded: false,
       };
     });
-  }, [classStudents, examSubjects, examKey, editedMarksBuffer]);
+  }, [classStudents, examSubjects, examKey, selectedExam, editedMarksBuffer]);
 
-  // Sort by total descending to compute ranks
+  // Sort only non-excluded students by total descending to compute fair ranks
   const sortedByRank = useMemo(() => {
-    return [...studentStats].sort((a, b) => b.total - a.total);
+    return [...studentStats.filter(s => !s.isExcluded)].sort((a, b) => b.total - a.total);
   }, [studentStats]);
 
   const rankMap = useMemo(() => {
@@ -171,7 +195,17 @@ export const MarksView: React.FC = () => {
     return map;
   }, [sortedByRank]);
 
-  const topper = sortedByRank[0] || studentStats[0];
+  const topper = sortedByRank[0] || studentStats.find(s => !s.isExcluded);
+
+  // Filtered view by active / excluded status
+  const visibleStudentStats = useMemo(() => {
+    if (examStatusFilter === 'active') return studentStats.filter(s => !s.isExcluded);
+    if (examStatusFilter === 'excluded') return studentStats.filter(s => s.isExcluded);
+    return studentStats;
+  }, [studentStats, examStatusFilter]);
+
+  const activeCount = studentStats.filter(s => !s.isExcluded).length;
+  const excludedCount = studentStats.filter(s => s.isExcluded).length;
 
   const reportTargetStudent = activeStudentForReport || topper?.student || students[0];
   const reportStats = (reportTargetStudent && studentStats.find(s => s.student.id === reportTargetStudent.id)) || {
@@ -459,27 +493,64 @@ export const MarksView: React.FC = () => {
       {/* VIEW 1: Marksheet Table */}
       {activeSubView === 'marksheet' && (
         <section className="bg-white rounded-2xl sm:rounded-3xl border border-[#eaedff] overflow-hidden shadow-xs space-y-3">
-          <div className="p-3 sm:p-4 border-b border-[#eaedff] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="p-3 sm:p-4 border-b border-[#eaedff] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-[#131b2e]">
-                {selectedExam} Results Matrix — {selectedClass}
-              </h3>
-              <p className="text-[10px] sm:text-xs text-[#737686]">
-                Editing {classStudents.length} student scores across {activeSubjects.length} subjects.
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xs sm:text-sm font-bold text-[#131b2e]">
+                  {selectedExam} Results Matrix — {selectedClass}
+                </h3>
+                <span className="text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-2.5 py-0.5 rounded-full">
+                  Max Marks: 50 / Subject
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-[#737686] mt-0.5">
+                {activeCount} active participants • {excludedCount} excluded from this examination.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-[#004ac6] bg-[#dbe1ff] px-2.5 py-1 rounded-full">
-                Max Marks: 50 / Subject
-              </span>
+
+            {/* Filter: All / Active / Excluded */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#f2f3ff] rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setExamStatusFilter('all')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+                  examStatusFilter === 'all'
+                    ? 'bg-white text-[#004ac6] shadow-xs'
+                    : 'text-[#737686] hover:text-[#131b2e]'
+                }`}
+              >
+                All ({studentStats.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setExamStatusFilter('active')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+                  examStatusFilter === 'active'
+                    ? 'bg-white text-[#007d55] shadow-xs'
+                    : 'text-[#737686] hover:text-[#131b2e]'
+                }`}
+              >
+                Active ({activeCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setExamStatusFilter('excluded')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+                  examStatusFilter === 'excluded'
+                    ? 'bg-white text-[#ba1a1a] shadow-xs'
+                    : 'text-[#737686] hover:text-[#131b2e]'
+                }`}
+              >
+                Excluded ({excludedCount})
+              </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[600px]">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-x-auto max-h-[600px] w-full">
+            <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
                 <tr className="bg-[#faf8ff] border-b border-[#eaedff] text-[10px] uppercase font-bold text-[#737686]">
-                  <th className="py-3 px-3">Roll & Student</th>
+                  <th className="py-3 px-3 sticky left-0 bg-[#faf8ff] z-20">Roll & Student</th>
                   <th className="py-3 px-3">Class</th>
                   {activeSubjects.map(sub => (
                     <th key={sub} className="py-3 px-3 text-center">
@@ -490,69 +561,129 @@ export const MarksView: React.FC = () => {
                   <th className="py-3 px-3 text-center">%</th>
                   <th className="py-3 px-3 text-center">Grade</th>
                   <th className="py-3 px-3 text-center">Rank</th>
+                  <th className="py-3 px-3 text-center">Exam Status</th>
                   <th className="py-3 px-3 text-right">Report</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#eaedff]">
-                {studentStats.map(({ student, total, pct, grade, gradeBadgeClass }) => {
-                  const rank = rankMap.get(student.id) || 1;
-                  return (
-                    <tr key={student.id} className="hover:bg-[#f2f3ff]/40 transition-colors">
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={student.avatarUrl}
-                            alt={student.name}
-                            className="w-7 h-7 rounded-full object-cover border border-[#dae2fd]"
-                          />
-                          <div>
-                            <span className="font-bold text-[#131b2e] block">{student.name}</span>
-                            <span className="text-[10px] text-[#737686]">Roll #{student.rollNo}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3 font-semibold text-[#434655]">{student.classSec}</td>
-
-                      {/* Subject Marks Input Fields */}
-                      {activeSubjects.map(sub => {
-                        const currentScore = getScore(student, sub);
-                        return (
-                          <td key={sub} className="py-2.5 px-2 text-center">
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={currentScore}
-                              onChange={e => handleScoreChange(student.id, sub, e.target.value)}
-                              className="w-14 h-8 text-center font-bold text-xs bg-[#f2f3ff] rounded-lg border border-[#dae2fd] focus:bg-white focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
+                {visibleStudentStats.length === 0 ? (
+                  <tr>
+                    <td colSpan={activeSubjects.length + 6} className="text-center py-8 text-[#737686]">
+                      No students match the current exam filter.
+                    </td>
+                  </tr>
+                ) : (
+                  visibleStudentStats.map(({ student, total, pct, grade, gradeBadgeClass, isExcluded }) => {
+                    const rank = rankMap.get(student.id);
+                    return (
+                      <tr
+                        key={student.id}
+                        className={`transition-colors ${
+                          isExcluded ? 'bg-red-50/30 text-gray-500' : 'hover:bg-[#f2f3ff]/40'
+                        }`}
+                      >
+                        <td className="py-2.5 px-3 sticky left-0 bg-white z-10">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={student.avatarUrl}
+                              alt={student.name}
+                              className="w-7 h-7 rounded-full object-cover border border-[#dae2fd]"
                             />
-                          </td>
-                        );
-                      })}
+                            <div className="min-w-0">
+                              <span className="font-bold text-[#131b2e] block truncate max-w-[130px]">
+                                {student.name}
+                              </span>
+                              <span className="text-[10px] text-[#737686]">Roll #{student.rollNo}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-[#434655]">{student.classSec}</td>
 
-                      <td className="py-2.5 px-3 text-center font-bold text-[#131b2e]">{total}</td>
-                      <td className="py-2.5 px-3 text-center font-bold text-[#004ac6]">{pct}%</td>
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${gradeBadgeClass}`}>
-                          {grade}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-center font-bold text-[#131b2e]">#{rank}</td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveStudentForReport(student);
-                            setActiveSubView('report');
-                          }}
-                          className="px-2.5 py-1 bg-[#004ac6] text-white rounded-lg text-[10px] font-bold active:scale-95"
-                        >
-                          View Card
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        {/* Subject Marks Input Fields */}
+                        {activeSubjects.map(sub => {
+                          const currentScore = getScore(student, sub);
+                          return (
+                            <td key={sub} className="py-2.5 px-2 text-center">
+                              {isExcluded ? (
+                                <span className="text-[11px] text-gray-400 font-mono italic">Excl.</span>
+                              ) : (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  value={currentScore}
+                                  onChange={e => handleScoreChange(student.id, sub, e.target.value)}
+                                  className="w-14 h-8 text-center font-bold text-xs bg-[#f2f3ff] rounded-lg border border-[#dae2fd] focus:bg-white focus:border-[#004ac6] focus:ring-1 focus:ring-[#004ac6]"
+                                />
+                              )}
+                            </td>
+                          );
+                        })}
+
+                        <td className="py-2.5 px-3 text-center font-bold text-[#131b2e]">
+                          {isExcluded ? '-' : total}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold text-[#004ac6]">
+                          {isExcluded ? '-' : `${pct}%`}
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${gradeBadgeClass}`}>
+                            {grade}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold text-[#131b2e]">
+                          {isExcluded ? '-' : rank ? `#${rank}` : '-'}
+                        </td>
+
+                        {/* Exam Status & Remove/Restore Action */}
+                        <td className="py-2.5 px-3 text-center">
+                          {isExcluded ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                restoreStudentToExam(student.id, examKey);
+                                showToast(`${student.name} restored back to ${selectedExam}`);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#bdffdb] text-[#002113] hover:bg-[#a6fcd0] rounded-lg text-[10px] font-bold transition-all active:scale-95"
+                              title="Restore student back into this exam"
+                            >
+                              <UserPlus className="w-3 h-3 text-[#007d55]" />
+                              <span>Restore</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Remove ${student.name} from ${selectedExam}?`)) {
+                                  removeStudentFromExam(student.id, examKey);
+                                  showToast(`${student.name} excluded from ${selectedExam}`, 'warning');
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#ffdad6] text-[#93000a] hover:bg-[#ffc2bb] rounded-lg text-[10px] font-bold transition-all active:scale-95"
+                              title="Exclude / Remove student from this exam"
+                            >
+                              <UserMinus className="w-3 h-3 text-[#ba1a1a]" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveStudentForReport(student);
+                              setActiveSubView('report');
+                            }}
+                            className="px-2.5 py-1 bg-[#004ac6] text-white rounded-lg text-[10px] font-bold active:scale-95"
+                          >
+                            View Card
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

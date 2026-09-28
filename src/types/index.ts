@@ -57,6 +57,8 @@ export interface Student {
   dob?: string;
   bloodGroup?: string;
   address?: string;
+  academicYear?: string;
+  excludedFromExams?: string[]; // IDs or codes of exams student is removed/excluded from
   marks: {
     ut1?: { math: number; sci: number; eng: number; [key: string]: number | undefined };
     ut2: { math: number; sci: number; eng: number; [key: string]: number | undefined };
@@ -72,8 +74,11 @@ export interface FacultyAttendanceLog {
   teacherName: string;
   date: string; // YYYY-MM-DD
   status: 'P' | 'A' | 'L' | 'HD' | 'OD'; // Present, Absent, Leave, Half Day, On Duty
-  inTime?: string;
-  outTime?: string;
+  inTime?: string; // Entry Time e.g. 08:30 AM
+  outTime?: string; // Exit Time e.g. 04:00 PM
+  workingHours?: string; // e.g. 7.5 hrs
+  shiftName?: string; // Morning / Day / Evening
+  academicYear?: string;
   authorizedByPrincipal: boolean;
   principalName?: string;
   principalNote?: string;
@@ -219,8 +224,22 @@ export interface DispatchModalConfig {
     | 'master-audit';
 }
 
+export type UserRole = 'Super Admin' | 'Teacher / Faculty' | 'Student' | 'Parent';
+
+export interface AcademicSession {
+  id: string;
+  name: string; // e.g. "2026-2027", "2025-2026", "2027-2028"
+  termName?: string; // e.g. "Annual Session", "Semester 1", "Term 2"
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  status: 'Active' | 'Upcoming' | 'Archived';
+  description?: string;
+}
+
 export type ActiveTab = 
   | 'dashboard' 
+  | 'live_class'
   | 'attendance' 
   | 'fees'
   | 'syllabus' 
@@ -247,7 +266,7 @@ export interface NoticeItem {
   title: string;
   content: string;
   category: 'Urgent' | 'Fees' | 'Holiday' | 'Exams' | 'PTM' | 'General';
-  targetAudience: 'All Parents' | 'Class-Specific' | 'All Teachers' | 'All Students';
+  targetAudience: 'All Parents' | 'Class-Specific' | 'All Teachers' | 'All Students' | string;
   targetClass?: string;
   priority: 'Normal' | 'High' | 'Urgent';
   publishedAt: string;
@@ -255,6 +274,7 @@ export interface NoticeItem {
   isPinned?: boolean;
   broadcastSent?: boolean;
   broadcastRecipientsCount?: number;
+  academicYear?: string;
 }
 
 export interface CustomExam {
@@ -264,6 +284,54 @@ export interface CustomExam {
   maxMarksPerSubject: number;
   startDate?: string;
   endDate?: string;
+  academicYear?: string;
+  excludedStudentIds?: string[];
+}
+
+export interface LiveSession {
+  id: string;
+  title: string;
+  className: string;
+  subject: string;
+  teacherId: string;
+  teacherName: string;
+  scheduledTime: string;
+  status: 'live' | 'scheduled' | 'ended';
+  roomId: string;
+  attendeeStudentIds: string[]; // Auto-marked present when joining!
+  isRecording: boolean;
+  recordingUrl?: string;
+  durationMinutes?: number;
+  academicYear: string;
+  chapterTopic?: string;
+}
+
+export interface LiveRecording {
+  id: string;
+  sessionId: string;
+  title: string;
+  className: string;
+  subject: string;
+  teacherName: string;
+  date: string;
+  duration: string; // e.g. '45 mins'
+  videoUrl: string;
+  thumbnailUrl?: string;
+  chapterTopic: string;
+  sizeMb: number;
+  academicYear: string;
+  downloadsCount?: number;
+}
+
+export interface StaffShift {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  shiftType: 'Morning Shift' | 'Day Shift' | 'Evening / Lab Shift';
+  scheduledIn: string; // e.g. '08:00 AM'
+  scheduledOut: string; // e.g. '03:30 PM'
+  roomAssigned: string;
+  dayOfWeek: string;
 }
 
 export interface FeeStructure {
@@ -291,6 +359,7 @@ export interface FeePaymentTransaction {
   date: string;
   receivedBy: string;
   note?: string;
+  academicYear?: string;
 }
 
 export interface StudentFeeDetails {

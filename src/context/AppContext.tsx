@@ -19,6 +19,11 @@ import {
   CalendarEvent,
   NoticeItem,
   CustomExam,
+  UserRole,
+  AcademicSession,
+  LiveSession,
+  LiveRecording,
+  StaffShift,
 } from '../types';
 import { INITIAL_STUDENTS, INITIAL_TEACHERS, INITIAL_SYLLABUS, INITIAL_WEBHOOK_LOGS, INITIAL_FACULTY_LOGS } from '../data/mockData';
 import { DEFAULT_INSTITUTION, CLIENT_PRESETS } from '../data/brandingPresets';
@@ -30,6 +35,12 @@ import {
   INITIAL_LEAVE_APPLICATIONS,
 } from '../data/feeAndLeaveData';
 import { INITIAL_CALENDAR_EVENTS, INITIAL_NOTICES, INITIAL_EXAMS } from '../data/calendarAndNoticeData';
+import {
+  INITIAL_ACADEMIC_SESSIONS,
+  INITIAL_LIVE_SESSIONS,
+  INITIAL_LIVE_RECORDINGS,
+  INITIAL_STAFF_SHIFTS,
+} from '../data/liveClassAndSessionData';
 
 interface ToastInfo {
   id: string;
@@ -43,10 +54,20 @@ interface AppContextType {
   setActiveTab: (tab: ActiveTab) => void;
   isDrawerOpen: boolean;
   setIsDrawerOpen: (open: boolean) => void;
-  userRole: 'Admin' | 'Teacher' | 'Principal';
-  setUserRole: (role: 'Admin' | 'Teacher' | 'Principal') => void;
+  userRole: UserRole;
+  setUserRole: (role: UserRole) => void;
   academicSession: string;
   setAcademicSession: (session: string) => void;
+
+  // Module 1: Academic Sessions & Year Switcher
+  academicSessions: AcademicSession[];
+  activeAcademicYear: string;
+  setActiveAcademicYear: (year: string) => void;
+  addAcademicSession: (session: AcademicSession) => void;
+  updateAcademicSession: (id: string, updates: Partial<AcademicSession>) => void;
+  deleteAcademicSession: (id: string) => void;
+  isAcademicSessionModalOpen: boolean;
+  setIsAcademicSessionModalOpen: (open: boolean) => void;
 
   // Institution / Multi-School Management (CRUD)
   institutions: InstitutionProfile[];
@@ -214,6 +235,37 @@ interface AppContextType {
   openFeeReminderModal: (classSec?: string, targetRole?: 'students' | 'parents' | 'teachers') => void;
   sendClassFeeReminders: (classSec: string, targetRole: 'students' | 'parents' | 'teachers') => Promise<{ count: number }>;
 
+  // Module 3: Live Class, Recording & Live Auto Attendance
+  liveSessions: LiveSession[];
+  liveRecordings: LiveRecording[];
+  activeLiveSession: LiveSession | null;
+  setActiveLiveSession: (session: LiveSession | null) => void;
+  startLiveClass: (session: Omit<LiveSession, 'id' | 'status' | 'attendeeStudentIds'>) => LiveSession;
+  endLiveClass: (sessionId: string) => void;
+  joinLiveClassWithAutoAttendance: (sessionId: string, studentId: string) => void;
+  deleteLiveRecording: (recordingId: string) => void;
+  isStartLiveClassModalOpen: boolean;
+  setIsStartLiveClassModalOpen: (open: boolean) => void;
+
+  // Module 2: Staff Roster & Shifts + Entry/Exit Timings
+  staffShifts: StaffShift[];
+  addStaffShift: (shift: StaffShift) => void;
+  updateStaffShift: (id: string, updates: Partial<StaffShift>) => void;
+  deleteStaffShift: (id: string) => void;
+  recordFacultyCheckInOut: (teacherId: string, inTime: string, outTime?: string, shiftName?: string) => void;
+
+  // Module 6: Remove Student from Exam
+  removeStudentFromExam: (studentId: string, examCode: string) => void;
+  restoreStudentToExam: (studentId: string, examCode: string) => void;
+
+  // Module 5: 1-Click Send to Class Students & Parents (WhatsApp + SMS + Push)
+  sendClassWiseMultiChannelMessage: (
+    classSec: string,
+    targetType: 'all' | 'parents' | 'students',
+    title: string,
+    body: string
+  ) => Promise<{ recipientsCount: number; channels: string[] }>;
+
   // Master All Data Transfer in Google Sheets
   isTransferringAllToSheets: boolean;
   transferAllDataToGoogleSheets: () => Promise<void>;
@@ -224,9 +276,37 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [userRole, setUserRole] = useState<'Admin' | 'Teacher' | 'Principal'>('Admin');
-  const [academicSession, setAcademicSession] = useState('2024 - 2025 (Term 2)');
+  const [userRole, setUserRole] = useState<UserRole>('Super Admin');
+  const [academicSession, setAcademicSession] = useState('2026 - 2027 (Annual Session)');
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+
+  // Module 1: Academic Sessions State
+  const [academicSessions, setAcademicSessions] = useState<AcademicSession[]>(() => {
+    try {
+      const saved = localStorage.getItem('edumanager_academic_sessions');
+      return saved ? JSON.parse(saved) : INITIAL_ACADEMIC_SESSIONS;
+    } catch {
+      return INITIAL_ACADEMIC_SESSIONS;
+    }
+  });
+
+  const [activeAcademicYear, setActiveAcademicYearState] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('edumanager_active_academic_year');
+      return saved || '2026-2027';
+    } catch {
+      return '2026-2027';
+    }
+  });
+
+  const [isAcademicSessionModalOpen, setIsAcademicSessionModalOpen] = useState(false);
+
+  const setActiveAcademicYear = (year: string) => {
+    setActiveAcademicYearState(year);
+    setAcademicSession(`${year} (Annual Session)`);
+    localStorage.setItem('edumanager_active_academic_year', year);
+    showToast(`Switched active academic session to ${year}! All data filtered.`);
+  };
 
   // 1. Multi-School / Institutions CRUD (Stored in localStorage)
   const [institutions, setInstitutions] = useState<InstitutionProfile[]>(() => {
@@ -410,6 +490,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 14. Master All Data Transfer in Google Sheets
   const [isTransferringAllToSheets, setIsTransferringAllToSheets] = useState(false);
+
+  // 15. Module 3: Live Class & Class-Wise Video Library
+  const [liveSessions, setLiveSessions] = useState<LiveSession[]>(() => {
+    try {
+      const saved = localStorage.getItem('edumanager_live_sessions');
+      return saved ? JSON.parse(saved) : INITIAL_LIVE_SESSIONS;
+    } catch {
+      return INITIAL_LIVE_SESSIONS;
+    }
+  });
+
+  const [liveRecordings, setLiveRecordings] = useState<LiveRecording[]>(() => {
+    try {
+      const saved = localStorage.getItem('edumanager_live_recordings');
+      return saved ? JSON.parse(saved) : INITIAL_LIVE_RECORDINGS;
+    } catch {
+      return INITIAL_LIVE_RECORDINGS;
+    }
+  });
+
+  const [activeLiveSession, setActiveLiveSession] = useState<LiveSession | null>(null);
+  const [isStartLiveClassModalOpen, setIsStartLiveClassModalOpen] = useState(false);
+
+  // 16. Module 2: Staff Shifts & Roster
+  const [staffShifts, setStaffShifts] = useState<StaffShift[]>(() => {
+    try {
+      const saved = localStorage.getItem('edumanager_staff_shifts');
+      return saved ? JSON.parse(saved) : INITIAL_STAFF_SHIFTS;
+    } catch {
+      return INITIAL_STAFF_SHIFTS;
+    }
+  });
 
   // Metrics trigger
   const [metricsKey, setMetricsKey] = useState(Date.now());
@@ -1356,6 +1468,220 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { count };
   };
 
+  // Module 1: Academic Sessions CRUD
+  const addAcademicSession = (session: AcademicSession) => {
+    setAcademicSessions(prev => {
+      const updated = [session, ...prev];
+      localStorage.setItem('edumanager_academic_sessions', JSON.stringify(updated));
+      return updated;
+    });
+    showToast(`Academic session "${session.name}" created!`, 'success');
+  };
+
+  const updateAcademicSession = (id: string, updates: Partial<AcademicSession>) => {
+    setAcademicSessions(prev => {
+      const updated = prev.map(s => s.id === id ? { ...s, ...updates } : s);
+      localStorage.setItem('edumanager_academic_sessions', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Academic session updated successfully', 'success');
+  };
+
+  const deleteAcademicSession = (id: string) => {
+    setAcademicSessions(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem('edumanager_academic_sessions', JSON.stringify(updated));
+      return updated;
+    });
+    showToast('Academic session removed', 'info');
+  };
+
+  // Module 3: Live Class, Recording & Auto Attendance
+  const startLiveClass = (sessionData: Omit<LiveSession, 'id' | 'status' | 'attendeeStudentIds'>): LiveSession => {
+    const newSession: LiveSession = {
+      ...sessionData,
+      id: `live-${Date.now()}`,
+      status: 'live',
+      attendeeStudentIds: [],
+    };
+    setLiveSessions(prev => [newSession, ...prev]);
+    setActiveLiveSession(newSession);
+    showToast(`Live Classroom started for ${newSession.className} - ${newSession.subject}!`, 'success');
+    return newSession;
+  };
+
+  const endLiveClass = (sessionId: string) => {
+    setLiveSessions(prev =>
+      prev.map(s => (s.id === sessionId ? { ...s, status: 'ended' } : s))
+    );
+    const session = liveSessions.find(s => s.id === sessionId) || activeLiveSession;
+    if (session) {
+      const newRec: LiveRecording = {
+        id: `rec-${Date.now()}`,
+        sessionId: session.id,
+        title: session.title,
+        className: session.className,
+        subject: session.subject,
+        teacherName: session.teacherName,
+        date: new Date().toISOString().split('T')[0],
+        duration: '45 mins',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80',
+        chapterTopic: session.chapterTopic || 'Live Lecture Session',
+        sizeMb: 140,
+        academicYear: activeAcademicYear,
+        downloadsCount: 1,
+      };
+      setLiveRecordings(prev => [newRec, ...prev]);
+      showToast(`Class ended. Auto-recording saved to ${session.className} Video Library!`, 'success');
+    }
+    setActiveLiveSession(null);
+  };
+
+  const joinLiveClassWithAutoAttendance = (sessionId: string, studentId: string) => {
+    setLiveSessions(prev =>
+      prev.map(s => {
+        if (s.id === sessionId && !s.attendeeStudentIds.includes(studentId)) {
+          return { ...s, attendeeStudentIds: [...s.attendeeStudentIds, studentId] };
+        }
+        return s;
+      })
+    );
+    updateStudentAttendance(studentId, 'P');
+    const std = students.find(s => s.id === studentId);
+    showToast(`⚡ Live Attendance: ${std?.name || 'Student'} auto-marked PRESENT on join!`, 'success');
+  };
+
+  const deleteLiveRecording = (recordingId: string) => {
+    setLiveRecordings(prev => prev.filter(r => r.id !== recordingId));
+    showToast('Class recording deleted', 'info');
+  };
+
+  // Module 2: Staff Shifts
+  const addStaffShift = (shift: StaffShift) => {
+    setStaffShifts(prev => [...prev, shift]);
+    showToast(`Staff shift assigned to ${shift.teacherName}`, 'success');
+  };
+
+  const updateStaffShift = (id: string, updates: Partial<StaffShift>) => {
+    setStaffShifts(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    showToast('Staff shift updated', 'success');
+  };
+
+  const deleteStaffShift = (id: string) => {
+    setStaffShifts(prev => prev.filter(s => s.id !== id));
+    showToast('Staff shift removed', 'info');
+  };
+
+  const recordFacultyCheckInOut = (teacherId: string, inTime: string, outTime?: string, shiftName?: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const teacher = teachers.find(t => t.id === teacherId);
+    const existingIndex = facultyAttendanceLogs.findIndex(l => l.teacherId === teacherId && l.date === today);
+
+    const logEntry: FacultyAttendanceLog = {
+      id: `att-${teacherId}-${today}`,
+      teacherId,
+      teacherName: teacher?.name || 'Faculty Member',
+      date: today,
+      status: 'P',
+      inTime,
+      outTime: outTime || '04:00 PM',
+      workingHours: '7.5 hrs',
+      shiftName: shiftName || 'Regular Day Shift',
+      academicYear: activeAcademicYear,
+      authorizedByPrincipal: true,
+      principalName: institution.principalName,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setFacultyAttendanceLogs(prev => {
+      if (existingIndex >= 0) {
+        const copy = [...prev];
+        copy[existingIndex] = { ...copy[existingIndex], ...logEntry };
+        return copy;
+      }
+      return [logEntry, ...prev];
+    });
+    showToast(`Faculty check-in: ${teacher?.name} (In: ${inTime}, Out: ${outTime || '04:00 PM'})`, 'success');
+  };
+
+  // Module 6: Remove / Restore student from exam
+  const removeStudentFromExam = (studentId: string, examCode: string) => {
+    setStudents(prev =>
+      prev.map(s => {
+        if (s.id === studentId) {
+          const excluded = s.excludedFromExams || [];
+          if (!excluded.includes(examCode)) {
+            return { ...s, excludedFromExams: [...excluded, examCode] };
+          }
+        }
+        return s;
+      })
+    );
+    setCustomExams(prev =>
+      prev.map(e => {
+        if (e.code === examCode || e.name === examCode) {
+          const list = e.excludedStudentIds || [];
+          if (!list.includes(studentId)) {
+            return { ...e, excludedStudentIds: [...list, studentId] };
+          }
+        }
+        return e;
+      })
+    );
+    showToast(`Student removed from ${examCode} examination`, 'warning');
+  };
+
+  const restoreStudentToExam = (studentId: string, examCode: string) => {
+    setStudents(prev =>
+      prev.map(s => {
+        if (s.id === studentId) {
+          return { ...s, excludedFromExams: (s.excludedFromExams || []).filter(c => c !== examCode) };
+        }
+        return s;
+      })
+    );
+    setCustomExams(prev =>
+      prev.map(e => {
+        if (e.code === examCode || e.name === examCode) {
+          return { ...e, excludedStudentIds: (e.excludedStudentIds || []).filter(id => id !== studentId) };
+        }
+        return e;
+      })
+    );
+    showToast(`Student reinstated into ${examCode} examination`, 'success');
+  };
+
+  // Module 5: Notice Room 1-Click Multi-Channel Dispatch
+  const sendClassWiseMultiChannelMessage = async (
+    classSec: string,
+    targetType: 'all' | 'parents' | 'students',
+    title: string,
+    body: string
+  ) => {
+    const classStudents = students.filter(s => classSec === 'ALL' || s.classSec === classSec || s.gradeLevel === classSec);
+    const count = classStudents.length;
+
+    await new Promise(r => setTimeout(r, 600));
+
+    addNotice({
+      title,
+      content: body,
+      category: 'General',
+      targetAudience: targetType === 'parents' ? `Parents - ${classSec}` : targetType === 'students' ? 'All Students' : 'Class-Specific',
+      targetClass: classSec,
+      priority: 'High',
+      publishedBy: `${institution.principalName} (Principal Office)`,
+      isPinned: true,
+      broadcastSent: true,
+      broadcastRecipientsCount: count,
+      academicYear: activeAcademicYear,
+    });
+
+    showToast(`⚡ 1-Click Sent: WhatsApp + SMS + Push delivered to ${count} ${targetType} of ${classSec}!`, 'success');
+    return { recipientsCount: count, channels: ['WhatsApp Official API', 'SMS Gateway', 'App Notification'] };
+  };
+
   // Master All Data Transfer in Google Sheets
   const transferAllDataToGoogleSheets = async () => {
     setIsTransferringAllToSheets(true);
@@ -1392,6 +1718,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         academicSession,
         setAcademicSession,
+
+        // Module 1: Academic Sessions
+        academicSessions,
+        activeAcademicYear,
+        setActiveAcademicYear,
+        addAcademicSession,
+        updateAcademicSession,
+        deleteAcademicSession,
+        isAcademicSessionModalOpen,
+        setIsAcademicSessionModalOpen,
+
+        // Module 3: Live Class & Recordings
+        liveSessions,
+        liveRecordings,
+        activeLiveSession,
+        setActiveLiveSession,
+        startLiveClass,
+        endLiveClass,
+        joinLiveClassWithAutoAttendance,
+        deleteLiveRecording,
+        isStartLiveClassModalOpen,
+        setIsStartLiveClassModalOpen,
+
+        // Module 2: Staff Shifts & Timings
+        staffShifts,
+        addStaffShift,
+        updateStaffShift,
+        deleteStaffShift,
+        recordFacultyCheckInOut,
+
+        // Module 6: Remove / Restore student from exam
+        removeStudentFromExam,
+        restoreStudentToExam,
+
+        // Module 5: 1-Click Multi-Channel Broadcast
+        sendClassWiseMultiChannelMessage,
 
         // Multi-School CRUD
         institutions,

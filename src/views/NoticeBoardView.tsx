@@ -19,6 +19,10 @@ import {
   Smartphone,
   Mail,
   Share2,
+  Zap,
+  Radio,
+  Layers,
+  GraduationCap,
 } from 'lucide-react';
 
 export const NoticeBoardView: React.FC = () => {
@@ -27,6 +31,7 @@ export const NoticeBoardView: React.FC = () => {
     addNotice,
     deleteNotice,
     broadcastNoticeToAllParents,
+    sendClassWiseMultiChannelMessage,
     isBroadcastingNotice,
     students,
     classes,
@@ -39,6 +44,17 @@ export const NoticeBoardView: React.FC = () => {
   const [isAddNoticeModalOpen, setIsAddNoticeModalOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [selectedNoticeForBroadcast, setSelectedNoticeForBroadcast] = useState<NoticeItem | null>(null);
+
+  // 1-Click Class-Wise Broadcast Modal State
+  const [isClassBroadcastModalOpen, setIsClassBroadcastModalOpen] = useState(false);
+  const [selectedBroadcastClass, setSelectedBroadcastClass] = useState<string>(classes[0]?.name || 'Class 10-A');
+  const [broadcastTargetRole, setBroadcastTargetRole] = useState<'all' | 'parents' | 'students'>('all');
+  const [classBroadcastTitle, setClassBroadcastTitle] = useState('');
+  const [classBroadcastBody, setClassBroadcastBody] = useState('');
+  const [channelWhatsApp, setChannelWhatsApp] = useState(true);
+  const [channelSMS, setChannelSMS] = useState(true);
+  const [channelPush, setChannelPush] = useState(true);
+  const [isSendingClassBroadcast, setIsSendingClassBroadcast] = useState(false);
 
   // New Notice Form State
   const [title, setTitle] = useState('');
@@ -117,6 +133,59 @@ export const NoticeBoardView: React.FC = () => {
     setIsBroadcastModalOpen(false);
   };
 
+  const handleOpenClassBroadcast = (defaultClass?: string) => {
+    const cls = defaultClass || (classes[0]?.name || 'Class 10-A');
+    setSelectedBroadcastClass(cls);
+    setClassBroadcastTitle(`Urgent Notification for ${cls}`);
+    setClassBroadcastBody(`Dear Parents & Students of ${cls},\nPlease take note of the upcoming academic schedule. Complete instructions have been updated in your portal.\n- Principal Office, ${institution.shortName}`);
+    setIsClassBroadcastModalOpen(true);
+  };
+
+  const handleApplyTemplate = (type: 'emergency' | 'fee' | 'exam' | 'live') => {
+    if (type === 'emergency') {
+      setClassBroadcastTitle(`Urgent Weather / Holiday Alert - ${selectedBroadcastClass}`);
+      setClassBroadcastBody(`Important notice for all parents of ${selectedBroadcastClass}: Due to institutional advisory, campus activities for today are suspended. Online classes will operate per timetable.`);
+    } else if (type === 'fee') {
+      setClassBroadcastTitle(`Term Fee Payment Reminder - ${selectedBroadcastClass}`);
+      setClassBroadcastBody(`Friendly reminder from ${institution.shortName} Accounts: Please clear pending term fee installments for ${selectedBroadcastClass} students before the due date.`);
+    } else if (type === 'exam') {
+      setClassBroadcastTitle(`Terminal Examination Schedule - ${selectedBroadcastClass}`);
+      setClassBroadcastBody(`The date sheet and syllabus scope for upcoming terminal examinations of ${selectedBroadcastClass} has been published. Please review syllabus progress in the app.`);
+    } else if (type === 'live') {
+      setClassBroadcastTitle(`Live Class Session Started - ${selectedBroadcastClass}`);
+      setClassBroadcastBody(`Live video class has commenced for ${selectedBroadcastClass}. Students please join immediately via the Live Class tab to register auto attendance.`);
+    }
+  };
+
+  const handleSendClassBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!classBroadcastTitle.trim() || !classBroadcastBody.trim()) {
+      showToast('Please enter both title and message body', 'warning');
+      return;
+    }
+
+    setIsSendingClassBroadcast(true);
+
+    try {
+      await sendClassWiseMultiChannelMessage(
+        selectedBroadcastClass,
+        broadcastTargetRole,
+        classBroadcastTitle,
+        classBroadcastBody
+      );
+
+      // If WhatsApp channel selected, trigger direct WhatsApp link for demonstration
+      if (channelWhatsApp) {
+        const text = encodeURIComponent(`*${classBroadcastTitle.toUpperCase()}*\n${classBroadcastBody}\n- ${institution.shortName}`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      }
+
+      setIsClassBroadcastModalOpen(false);
+    } finally {
+      setIsSendingClassBroadcast(false);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full px-2.5 sm:px-4 py-2 sm:py-3 space-y-3 sm:space-y-4 max-w-7xl mx-auto text-left pb-28">
       {/* Header Banner */}
@@ -133,23 +202,33 @@ export const NoticeBoardView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => handleOpenClassBroadcast()}
+            className="flex-1 sm:flex-initial h-10 px-3.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            type="button"
+            title="Send WhatsApp + SMS + Push to students & parents of a specific class in 1-click"
+          >
+            <Zap className="w-4 h-4 text-amber-200" />
+            <span>⚡ 1-Click Class Message</span>
+          </button>
+
           <button
             onClick={() => {
               if (notices.length > 0) {
                 handleOpenBroadcastModal(notices[0]);
               }
             }}
-            className="flex-1 sm:flex-initial h-10 px-4 bg-gradient-to-r from-[#007d55] to-[#005236] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            className="flex-1 sm:flex-initial h-10 px-3.5 bg-gradient-to-r from-[#007d55] to-[#005236] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
             type="button"
           >
             <Send className="w-4 h-4" />
-            <span>⚡ Broadcast to All Parents</span>
+            <span>Broadcast All Parents</span>
           </button>
 
           <button
             onClick={() => setIsAddNoticeModalOpen(true)}
-            className="flex-1 sm:flex-initial h-10 px-4 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            className="flex-1 sm:flex-initial h-10 px-3.5 bg-gradient-to-r from-[#004ac6] to-[#1e3a8a] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
             type="button"
           >
             <Plus className="w-4 h-4" />
@@ -529,6 +608,192 @@ export const NoticeBoardView: React.FC = () => {
                 <span>{isBroadcastingNotice ? 'Dispatching...' : 'Dispatch in 1-Click Now'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* 1-CLICK CLASS BROADCAST MODAL (WhatsApp + SMS + Push) */}
+      {isClassBroadcastModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-[#eaedff] overflow-hidden text-left"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-amber-200" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg">1-Click Class Message</h3>
+                  <p className="text-xs text-white/80">WhatsApp API + SMS Gateway + App Push Notification</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClassBroadcastModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendClassBroadcast} className="p-4 sm:p-5 space-y-3.5 text-xs">
+              {/* Class & Audience Selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Target Class *</label>
+                  <select
+                    value={selectedBroadcastClass}
+                    onChange={e => setSelectedBroadcastClass(e.target.value)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  >
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        {c.name} ({c.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Recipients *</label>
+                  <select
+                    value={broadcastTargetRole}
+                    onChange={e => setBroadcastTargetRole(e.target.value as any)}
+                    className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-bold focus:bg-white outline-none"
+                  >
+                    <option value="all">Students & Parents of Class</option>
+                    <option value="parents">Class-wise Parents Only</option>
+                    <option value="students">Class-wise Students Only</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Multi-Channel Checkboxes */}
+              <div>
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Active Transmission Channels</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <label className={`flex items-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                    channelWhatsApp ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={channelWhatsApp}
+                      onChange={e => setChannelWhatsApp(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-0"
+                    />
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-[11px]">WhatsApp</span>
+                  </label>
+
+                  <label className={`flex items-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                    channelSMS ? 'bg-blue-50 border-blue-300 text-blue-900 font-bold' : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={channelSMS}
+                      onChange={e => setChannelSMS(e.target.checked)}
+                      className="rounded text-blue-600 focus:ring-0"
+                    />
+                    <Smartphone className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="text-[11px]">SMS Gateway</span>
+                  </label>
+
+                  <label className={`flex items-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${
+                    channelPush ? 'bg-purple-50 border-purple-300 text-purple-900 font-bold' : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={channelPush}
+                      onChange={e => setChannelPush(e.target.checked)}
+                      className="rounded text-purple-600 focus:ring-0"
+                    />
+                    <BellRing className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="text-[11px]">App Push</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Quick Template Buttons */}
+              <div>
+                <label className="font-bold uppercase text-[10px] text-[#737686] block mb-1">Quick Smart Templates</label>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('emergency')}
+                    className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-[10px] font-bold border border-red-200"
+                  >
+                    🚨 Weather / Emergency
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('fee')}
+                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[10px] font-bold border border-amber-200"
+                  >
+                    💰 Fee Reminder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('exam')}
+                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg text-[10px] font-bold border border-blue-200"
+                  >
+                    📝 Exam Date Sheet
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyTemplate('live')}
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-bold border border-emerald-200"
+                  >
+                    💻 Live Class Link
+                  </button>
+                </div>
+              </div>
+
+              {/* Title & Body */}
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-[10px] text-[#737686]">Notice / Circular Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={classBroadcastTitle}
+                  onChange={e => setClassBroadcastTitle(e.target.value)}
+                  placeholder="e.g. Schedule Update for Class 10-A"
+                  className="w-full h-10 px-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs font-semibold focus:bg-white outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold uppercase text-[10px] text-[#737686]">Message Body *</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={classBroadcastBody}
+                  onChange={e => setClassBroadcastBody(e.target.value)}
+                  placeholder="Enter circular details..."
+                  className="w-full p-3 bg-[#f2f3ff] rounded-xl border border-[#dae2fd] text-xs focus:bg-white outline-none"
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsClassBroadcastModalOpen(false)}
+                  className="h-10 px-4 rounded-xl font-bold text-xs text-[#737686] hover:bg-[#f2f3ff]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSendingClassBroadcast}
+                  className="h-10 px-5 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Zap className="w-4 h-4 text-amber-200" />
+                  <span>{isSendingClassBroadcast ? 'Broadcasting...' : '1-Click Send to Class'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

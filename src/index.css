@@ -8,6 +8,7 @@
     background-color: #faf8ff;
     color: #131b2e;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .pb-safe {
@@ -17,6 +18,26 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  /* 100% Auto-Adjustable Rules: Ensure no card, button, or text cuts off */
+  * {
+    min-width: 0;
+  }
+}
+
+/* Card and Content Auto-Adjustable Rules */
+.responsive-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Responsive Table Wrapper */
+.responsive-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .no-scrollbar::-webkit-scrollbar {
